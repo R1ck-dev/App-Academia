@@ -1,43 +1,62 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# --- Tooling do Claude (não sobe pro GitHub) ---
+.claude/
+.agents/
+CLAUDE.md
+AGENTS.md
+skills-lock.json
 
-# dependencies
+# --- Segredos e variáveis de ambiente ---
+.env
+.env.*
+*.local
+!.env.example
+
+# --- Node ---
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Expo
+# --- Expo / React Native ---
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+# Projetos nativos gerados por `expo prebuild` — regenerados, não versionados
+/ios
+/android
 
 # Metro
 .metro-health-check*
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# --- Build / assinatura (NUNCA versionar) ---
+*.keystore
+!debug.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.jks
 
-# macOS
+# --- Banco local de desenvolvimento ---
+*.db
+*.db-shm
+*.db-wal
+
+# --- Testes ---
+coverage/
+
+# --- Sistema operacional ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 .DS_Store
-*.pem
+*.orig.*
 
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-example
-
-# generated native folders
-/ios
-/android
+# --- IDEs ---
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json

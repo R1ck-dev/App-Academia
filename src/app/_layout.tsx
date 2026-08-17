@@ -1,18 +1,29 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { DarkTheme, ThemeProvider } from 'expo-router/react-navigation';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { StatusBar } from 'expo-status-bar';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { ProvedorBanco } from '@/components/provedor-banco';
 
-SplashScreen.preventAutoHideAsync();
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function Layout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+    <ThemeProvider value={DarkTheme}>
+      <StatusBar style="light" />
+      <ProvedorBanco>
+        <NativeTabs>
+          <NativeTabs.Trigger name="index">
+            <NativeTabs.Trigger.Icon sf="dumbbell.fill" md="fitness_center" />
+            <NativeTabs.Trigger.Label>Treino</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+          <NativeTabs.Trigger name="historico">
+            <NativeTabs.Trigger.Icon sf="chart.line.uptrend.xyaxis" md="trending_up" />
+            <NativeTabs.Trigger.Label>Histórico</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+          <NativeTabs.Trigger name="corpo">
+            <NativeTabs.Trigger.Icon sf="figure.stand" md="accessibility" />
+            <NativeTabs.Trigger.Label>Corpo</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+        </NativeTabs>
+      </ProvedorBanco>
     </ThemeProvider>
   );
 }
