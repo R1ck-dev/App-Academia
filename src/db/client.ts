@@ -34,8 +34,10 @@ sqlite.execSync(`
   PRAGMA synchronous = NORMAL;
 `);
 
-export const bancoDoAparelho = drizzle(sqlite, { schema });
-export const sqliteBruto = sqlite;
+// Não exportado: quem quiser o banco pede `db` a `conexao.ts`. Exportar a
+// instância daqui seria a porta dos fundos que faz uma tela importar o Drizzle
+// do aparelho direto e deixar de rodar no `node --test`.
+const bancoDoAparelho = drizzle(sqlite, { schema });
 
 conectarBanco({ banco: bancoDoAparelho, novoId: () => Crypto.randomUUID() });
 

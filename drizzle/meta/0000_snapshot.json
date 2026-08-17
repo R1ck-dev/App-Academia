@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6b334bf2-72c5-4e14-b205-132ed40bdb71",
+  "id": "2694308b-ece5-4c2c-afa2-cb3ff40e4301",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "exercicios": {
@@ -40,16 +40,28 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "'carga_reps'"
+          "autoincrement": false
         },
         "incremento_g": {
           "name": "incremento_g",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 2500
+          "notNull": false,
+          "autoincrement": false
+        },
+        "incremento_placas": {
+          "name": "incremento_placas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "gramas_por_placa": {
+          "name": "gramas_por_placa",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "observacao": {
           "name": "observacao",
@@ -92,7 +104,20 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "ck_exercicios_tipo": {
+          "name": "ck_exercicios_tipo",
+          "value": "\"exercicios\".\"tipo_medicao\" in ('carga_kg', 'carga_placa', 'peso_corporal', 'tempo', 'distancia')"
+        },
+        "ck_exercicios_incremento": {
+          "name": "ck_exercicios_incremento",
+          "value": "(\"exercicios\".\"tipo_medicao\" = 'carga_kg' and \"exercicios\".\"incremento_g\" > 0 and \"exercicios\".\"incremento_placas\" is null)\n       or (\"exercicios\".\"tipo_medicao\" = 'carga_placa' and \"exercicios\".\"incremento_placas\" between 1 and 5 and \"exercicios\".\"incremento_g\" is null)\n       or (\"exercicios\".\"tipo_medicao\" in ('peso_corporal', 'tempo', 'distancia') and \"exercicios\".\"incremento_g\" is null and \"exercicios\".\"incremento_placas\" is null)"
+        },
+        "ck_exercicios_placa": {
+          "name": "ck_exercicios_placa",
+          "value": "\"exercicios\".\"gramas_por_placa\" is null or (\"exercicios\".\"tipo_medicao\" = 'carga_placa' and \"exercicios\".\"gramas_por_placa\" > 0)"
+        }
+      }
     },
     "medidas": {
       "name": "medidas",
@@ -167,7 +192,81 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "ck_medidas_valor": {
+          "name": "ck_medidas_valor",
+          "value": "\"medidas\".\"valor_mm\" > 0"
+        }
+      }
+    },
+    "perfil": {
+      "name": "perfil",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'unico'"
+        },
+        "altura_mm": {
+          "name": "altura_mm",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "peso_objetivo_g": {
+          "name": "peso_objetivo_g",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "peso_inicial_g": {
+          "name": "peso_inicial_g",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "objetivo_definido_em": {
+          "name": "objetivo_definido_em",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "ck_perfil_linha_unica": {
+          "name": "ck_perfil_linha_unica",
+          "value": "\"perfil\".\"id\" = 'unico'"
+        },
+        "ck_perfil_valores": {
+          "name": "ck_perfil_valores",
+          "value": "(\"perfil\".\"altura_mm\" is null or \"perfil\".\"altura_mm\" between 1000 and 2500)\n      and (\"perfil\".\"peso_objetivo_g\" is null or \"perfil\".\"peso_objetivo_g\" > 0)\n      and (\"perfil\".\"peso_inicial_g\" is null or \"perfil\".\"peso_inicial_g\" > 0)"
+        }
+      }
     },
     "pesagens": {
       "name": "pesagens",
@@ -234,7 +333,12 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "ck_pesagens_peso": {
+          "name": "ck_pesagens_peso",
+          "value": "\"pesagens\".\"peso_g\" > 0"
+        }
+      }
     },
     "preferencias": {
       "name": "preferencias",
@@ -308,6 +412,13 @@
         },
         "carga_g": {
           "name": "carga_g",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "carga_placas": {
+          "name": "carga_placas",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -412,7 +523,36 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "ck_series_uma_unidade": {
+          "name": "ck_series_uma_unidade",
+          "value": "\"series\".\"carga_g\" is null or \"series\".\"carga_placas\" is null"
+        },
+        "ck_series_carga_positiva": {
+          "name": "ck_series_carga_positiva",
+          "value": "(\"series\".\"carga_g\" is null or \"series\".\"carga_g\" > 0) and (\"series\".\"carga_placas\" is null or \"series\".\"carga_placas\" > 0)"
+        },
+        "ck_series_tipo": {
+          "name": "ck_series_tipo",
+          "value": "\"series\".\"tipo\" in ('aquecimento', 'valida', 'falha')"
+        },
+        "ck_series_rir": {
+          "name": "ck_series_rir",
+          "value": "\"series\".\"rir\" is null or (\"series\".\"rir\" between 0 and 5)"
+        },
+        "ck_series_reps": {
+          "name": "ck_series_reps",
+          "value": "\"series\".\"repeticoes\" is null or \"series\".\"repeticoes\" > 0"
+        },
+        "ck_series_duracao": {
+          "name": "ck_series_duracao",
+          "value": "\"series\".\"duracao_s\" is null or \"series\".\"duracao_s\" > 0"
+        },
+        "ck_series_indice": {
+          "name": "ck_series_indice",
+          "value": "\"series\".\"indice\" >= 0"
+        }
+      }
     },
     "sessoes": {
       "name": "sessoes",
@@ -488,6 +628,14 @@
             "iniciada_em"
           ],
           "isUnique": false
+        },
+        "uq_sessao_aberta": {
+          "name": "uq_sessao_aberta",
+          "columns": [
+            "1"
+          ],
+          "isUnique": true,
+          "where": "\"sessoes\".\"finalizada_em\" is null and \"sessoes\".\"arquivado_em\" is null"
         }
       },
       "foreignKeys": {
@@ -507,7 +655,12 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "ck_sessoes_intervalo": {
+          "name": "ck_sessoes_intervalo",
+          "value": "\"sessoes\".\"finalizada_em\" is null or \"sessoes\".\"finalizada_em\" >= \"sessoes\".\"iniciada_em\""
+        }
+      }
     },
     "treino_exercicios": {
       "name": "treino_exercicios",
@@ -558,6 +711,27 @@
         },
         "reps_alvo_max": {
           "name": "reps_alvo_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "carga_alvo_g": {
+          "name": "carga_alvo_g",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "carga_alvo_placas": {
+          "name": "carga_alvo_placas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "duracao_alvo_s": {
+          "name": "duracao_alvo_s",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -640,7 +814,28 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "ck_te_uma_unidade": {
+          "name": "ck_te_uma_unidade",
+          "value": "\"treino_exercicios\".\"carga_alvo_g\" is null or \"treino_exercicios\".\"carga_alvo_placas\" is null"
+        },
+        "ck_te_carga_positiva": {
+          "name": "ck_te_carga_positiva",
+          "value": "(\"treino_exercicios\".\"carga_alvo_g\" is null or \"treino_exercicios\".\"carga_alvo_g\" > 0) and (\"treino_exercicios\".\"carga_alvo_placas\" is null or \"treino_exercicios\".\"carga_alvo_placas\" > 0)"
+        },
+        "ck_te_series_alvo": {
+          "name": "ck_te_series_alvo",
+          "value": "\"treino_exercicios\".\"series_alvo\" > 0"
+        },
+        "ck_te_reps_faixa": {
+          "name": "ck_te_reps_faixa",
+          "value": "\"treino_exercicios\".\"reps_alvo_min\" is null or \"treino_exercicios\".\"reps_alvo_max\" is null or \"treino_exercicios\".\"reps_alvo_max\" >= \"treino_exercicios\".\"reps_alvo_min\""
+        },
+        "ck_te_duracao": {
+          "name": "ck_te_duracao",
+          "value": "\"treino_exercicios\".\"duracao_alvo_s\" is null or \"treino_exercicios\".\"duracao_alvo_s\" > 0"
+        }
+      }
     },
     "treinos": {
       "name": "treinos",
@@ -711,6 +906,14 @@
     "columns": {}
   },
   "internal": {
-    "indexes": {}
+    "indexes": {
+      "uq_sessao_aberta": {
+        "columns": {
+          "1": {
+            "isExpression": true
+          }
+        }
+      }
+    }
   }
 }

@@ -1,9 +1,11 @@
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import migrations from '@/../drizzle/migrations';
 import { cores, espaco, fonte } from '@/constants/tema';
 import { db } from '@/db/client';
+import { aplicarSeed } from '@/db/seed';
 
 /**
  * Segura a UI até o banco estar utilizável.
@@ -16,10 +18,32 @@ import { db } from '@/db/client';
  */
 export function ProvedorBanco({ children }: { children: React.ReactNode }) {
   const { success, error } = useMigrations(db, migrations);
+  const [pronto, setPronto] = useState(false);
+
+  /**
+   * O seed roda DEPOIS da migration e ANTES da primeira tela: a aba Treino
+   * consulta `treinos` e abriria vazia num app que deveria abrir com as três
+   * fichas dele.
+   *
+   * Dentro do `useEffect`, e não no corpo do componente, porque `aplicarSeed` é
+   * uma transação SÍNCRONA — no corpo ela rodaria a cada render. O `try/catch` é
+   * assimétrico em relação à migration de propósito: migration quebrada é tela de
+   * erro (os dados estão em risco), seed quebrado é só catálogo faltando, e
+   * travar o app por isso seria pior do que abrir vazio.
+   */
+  useEffect(() => {
+    if (!success) return;
+    try {
+      aplicarSeed();
+    } catch (e) {
+      console.warn('seed falhou', e);
+    }
+    setPronto(true);
+  }, [success]);
 
   if (error) return <TelaErro erro={error} />;
 
-  if (!success) {
+  if (!success || !pronto) {
     return (
       <View style={estilos.centro}>
         <ActivityIndicator color={cores.destaque} />
