@@ -13,7 +13,7 @@
  */
 
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { TecladoDeCarga } from '@/components/treino-teclado-carga';
@@ -38,6 +38,9 @@ import type { SerieExecutada } from '@/dominio/volume';
 /** Um minuto por toque: menor degrau útil de esteira. Não é regra de domínio, é o botão. */
 const PASSO_DURACAO_S = 60;
 
+/** Meio segundo: acima do intervalo de um toque duplo, abaixo de qualquer série real. */
+const JANELA_TOQUE_REPETIDO_MS = 500;
+
 type Ajuste = {
   readonly indice: number;
   readonly carga: Carga | null;
@@ -56,6 +59,10 @@ export function CartaoDoExercicio({
 }) {
   const [ajuste, setAjuste] = useState<Ajuste | null>(null);
   const [tecladoAberto, setTecladoAberto] = useState(false);
+  // `useRef` e não `useState`: o valor é lido e escrito dentro do MESMO toque, e
+  // um `state` só mudaria no render seguinte — tarde demais para barrar o
+  // segundo toque, que é justamente o que chega antes do redesenho.
+  const ultimoRegistro = useRef(0);
 
   const ex = item.exercicio;
   const unidade = unidadeDoTipo(ex.tipoMedicao);
@@ -85,6 +92,11 @@ export function CartaoDoExercicio({
       setTecladoAberto(true);
       return;
     }
+    // Ninguém faz duas séries em meio segundo: o segundo toque é engano ou tela
+    // engasgando. Ignorar é o comportamento certo — registrar as duas deixaria
+    // uma série fantasma no histórico, descoberta só semanas depois.
+    if (Date.now() - ultimoRegistro.current < JANELA_TOQUE_REPETIDO_MS) return;
+    ultimoRegistro.current = Date.now();
     try {
       confirmarSerie(sessaoId, { ...sugerida, tipo });
       setAjuste(null);

@@ -1,5 +1,5 @@
 /**
- * Reatividade da leitura para as telas de Corpo e Histórico.
+ * O ÚNICO jeito de uma tela ler o banco.
  *
  * As telas leem por `queries.ts`, e não por consulta do Drizzle montada no
  * componente: é em `queries.ts` que mora o filtro de `arquivado_em`, o join que
@@ -7,39 +7,43 @@
  * `Carga`. Repetir qualquer um desses na tela é o jeito silencioso de a tela
  * discordar do resto do app.
  *
- * `useLiveQuery` continua sendo quem escuta a escrita (é ele que assina o
- * `addDatabaseChangeListener` do `enableChangeListener`), só que sobre uma
- * CONTAGEM barata usada como sinal: ele reage à tabela do `from`, e a consulta
- * de verdade acontece depois, num `useMemo` que depende desse sinal.
+ * ## As duas versões que não funcionaram no aparelho
+ *
+ * 1. `useLiveQuery` do Drizzle, que escuta o `addDatabaseChangeListener` do
+ *    expo-sqlite: no APK de release o evento nativo não chega ao JS. A sessão era
+ *    gravada e a tela continuava oferecendo iniciar o treino.
+ * 2. `useMemo(() => consulta(), [versaoDoSinal])`: o React Compiler recalcula as
+ *    dependências pelo corpo do callback e apaga a que não é usada lá dentro. A
+ *    tela de execução passou a ler o plano uma vez e nunca mais — registrar série
+ *    gravava e não aparecia.
+ *
+ * As duas tinham 350 testes verdes por cima. Por isso o mecanismo agora é
+ * `useSyncExternalStore` (hook: o compilador é obrigado a chamar) sobre o cache
+ * por versão de `db/consulta.ts` (testável no `node --test`), e existe
+ * `reatividade.test.ts` compilando as telas com o compilador de verdade.
  */
 
-import { count } from 'drizzle-orm';
-import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
-import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
+import { useSyncExternalStore } from 'react';
 
-import { db } from '@/db/client';
+import { lerComCache } from '@/db/consulta';
+import { assinarEscritas } from '@/db/sinal';
 
 /**
- * Muda a cada escrita em qualquer das tabelas observadas. Use como dependência
- * de `useMemo` em volta das funções de `queries.ts`.
+ * Lê `consultar()` e relê a cada escrita no banco.
  *
- * Observa NO MÁXIMO TRÊS tabelas, e o limite é proposital nas duas pontas: a
- * quantidade de hooks tem que ser fixa entre renders (regra do React), e uma
- * tela que depende de mais de três tabelas está lendo demais para uma tela só.
+ * `chave` identifica a consulta **e os parâmetros dela** (`'usePlano:' + id`,
+ * nunca só `'usePlano'`): é ela que separa uma leitura da outra no cache. O
+ * prefixo é o nome do hook que chama, para colisão ser impossível de acontecer
+ * por acidente.
+ *
+ * Sem granularidade por tabela de propósito: as consultas são SQLite local
+ * síncrono, e relê-las custa microssegundos — menos que o risco de errar qual
+ * tabela invalidar.
  */
-export function useSinalDeEscrita(tabelas: readonly SQLiteTable[]): number {
-  const primeira = tabelas[0];
-  // Repetir a primeira tabela quando faltam entradas é de graça: duas escutas
-  // sobre a mesma tabela custam duas contagens e mantêm a ordem dos hooks estável.
-  const a = useMarcaDeEscrita(primeira);
-  const b = useMarcaDeEscrita(tabelas[1] ?? primeira);
-  const c = useMarcaDeEscrita(tabelas[2] ?? primeira);
-  return a + b + c;
-}
-
-function useMarcaDeEscrita(tabela: SQLiteTable): number {
-  // `count()` devolve UMA linha por consulta, independentemente do tamanho da
-  // tabela: o valor não é usado, só o instante em que ele chegou.
-  const { updatedAt } = useLiveQuery(db.select({ linhas: count() }).from(tabela));
-  return updatedAt?.getTime() ?? 0;
+export function useConsulta<T>(chave: string, consultar: () => T): T {
+  // O cache é o que torna este `getSnapshot` legal: `useSyncExternalStore`
+  // compara o resultado por identidade, e uma consulta crua devolveria objeto
+  // novo a cada chamada — laço infinito.
+  const ler = () => lerComCache(chave, consultar);
+  return useSyncExternalStore(assinarEscritas, ler, ler);
 }

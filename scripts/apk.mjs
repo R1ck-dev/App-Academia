@@ -15,10 +15,23 @@
  * 3. `--no-daemon` custou 59 minutos numa build que, com daemon, leva 6.
  *    Este script simplesmente não passa a flag.
  *
+ * A quarta dor é desta máquina e foi medida em 17/08/2026: com **8 GB de RAM**,
+ * a primeira build falhou em `compileReleaseJavaWithJavac` com "Unable to
+ * connect to the child process 'Gradle Worker Daemon 1'... timeout after 120s".
+ * Não é erro de código nem falta de heap — é falta de RAM livre. O Gradle
+ * empacotava o bundle JS (Metro, ~1,5 GB) enquanto compilava Java em paralelo,
+ * cada worker sendo uma JVM nova, e o sistema estava com 0,5 GB livres.
+ *
+ * Por isso o script LIMITA a concorrência em vez de aumentar o heap: subir
+ * `-Xmx` aqui pioraria, porque o problema é o número de JVMs simultâneas, não o
+ * tamanho de cada uma. E, como em (2), isso não pode morar em
+ * `android/gradle.properties`, que o `prebuild` regenera.
+ *
  * Uso:
  *   node scripts/apk.mjs                 gera o APK para arm64 (celulares atuais)
  *   node scripts/apk.mjs --instalar      gera e instala no aparelho conectado
  *   node scripts/apk.mjs --todas         gera para as 4 arquiteturas (emulador x86)
+ *   node scripts/apk.mjs --rapido        libera a paralelização (máquina folgada)
  */
 
 import { spawnSync } from 'node:child_process';
@@ -29,6 +42,7 @@ const raiz = join(import.meta.dirname, '..');
 const args = process.argv.slice(2);
 const instalar = args.includes('--instalar');
 const todas = args.includes('--todas');
+const rapido = args.includes('--rapido');
 
 // Celular Android atual é arm64-v8a. Emulador do Android Studio costuma ser
 // x86_64 — daí o `--todas`, que continua disponível quando for o caso.
@@ -58,10 +72,17 @@ const ambiente = { ...process.env, ANDROID_HOME: sdk, ANDROID_SDK_ROOT: sdk };
 // executável no diretório atual — `gradlew.bat` sozinho dá "não reconhecido".
 const gradlew = join(pastaAndroid, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew');
 
-console.log(`Compilando release para ${arquiteturas}…`);
+// Cada worker do Gradle é uma JVM separada, e o pico acontece quando o Metro
+// (que sozinho passa de 1 GB) empacota o bundle enquanto o javac compila. Dois
+// workers cabem em 8 GB; o padrão do Gradle é um por núcleo — oito aqui.
+const concorrencia = rapido
+  ? []
+  : ['--max-workers=2', '-Dorg.gradle.parallel=false', '-Dkotlin.compiler.execution.strategy=in-process'];
+
+console.log(`Compilando release para ${arquiteturas}${rapido ? '' : ' (concorrência limitada)'}…`);
 const build = spawnSync(
   gradlew,
-  ['assembleRelease', `-PreactNativeArchitectures=${arquiteturas}`],
+  ['assembleRelease', `-PreactNativeArchitectures=${arquiteturas}`, ...concorrencia],
   { cwd: pastaAndroid, env: ambiente, stdio: 'inherit', shell: process.platform === 'win32' }
 );
 

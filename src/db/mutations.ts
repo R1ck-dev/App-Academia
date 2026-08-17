@@ -34,6 +34,7 @@ import {
   type Exercicio as ExercicioDoDominio,
 } from '../dominio/exercicio.ts';
 import { agora, db, novoId, type Banco } from './conexao.ts';
+import { anunciarEscrita } from './sinal.ts';
 import {
   exercicios,
   medidas,
@@ -63,6 +64,22 @@ const ID_PERFIL = 'unico';
  * Não filtra `arquivado_em`: corrigir uma série de exercício arquivado continua
  * precisando saber a unidade dele.
  */
+/**
+ * O maior índice já usado + 1, dentro da transação que vai gravar.
+ *
+ * NÃO filtra `arquivado_em`: o UNIQUE também não filtra, então uma série
+ * desfeita continua ocupando o slot dela. Contar só as visíveis recolidiria no
+ * número da série desfeita — é `maior + 1`, nunca `quantidade`.
+ */
+function proximoIndiceNaTransacao(tx: Escrita, sessaoId: string, exercicioId: string): number {
+  const linha = tx
+    .select({ maior: sql<number | null>`max(${series.indice})` })
+    .from(series)
+    .where(and(eq(series.sessaoId, sessaoId), eq(series.exercicioId, exercicioId)))
+    .get();
+  return (linha?.maior ?? -1) + 1;
+}
+
 function lerExercicio(tx: Escrita, exercicioId: string): ExercicioDoDominio {
   const linha = tx.select().from(exercicios).where(eq(exercicios.id, exercicioId)).get();
   if (!linha) throw new Error(`Exercício ${exercicioId} não encontrado.`);
@@ -155,6 +172,7 @@ export function criarExercicio(dados: {
       atualizadoEm: instante,
     })
     .run();
+  anunciarEscrita();
   return id;
 }
 
@@ -202,6 +220,7 @@ export function arquivarExercicio(exercicioId: string): void {
     .set({ arquivadoEm: instante, atualizadoEm: instante })
     .where(and(eq(exercicios.id, exercicioId), isNull(exercicios.arquivadoEm)))
     .run();
+  anunciarEscrita();
 }
 
 /**
@@ -369,6 +388,7 @@ export function criarTreino(dados: { nome: string; descricao?: string; ordem?: n
   db.insert(treinos)
     .values({ id, criadoEm: instante, atualizadoEm: instante, ...dados })
     .run();
+  anunciarEscrita();
   return id;
 }
 
@@ -378,6 +398,7 @@ export function arquivarTreino(treinoId: string): void {
     .set({ arquivadoEm: instante, atualizadoEm: instante })
     .where(and(eq(treinos.id, treinoId), isNull(treinos.arquivadoEm)))
     .run();
+  anunciarEscrita();
 }
 
 /**
@@ -449,6 +470,7 @@ export function atualizarItemDoTreino(
   if (dados.descansoS !== undefined) campos.descansoS = dados.descansoS;
   if (dados.observacao !== undefined) campos.observacao = dados.observacao;
   db.update(treinoExercicios).set(campos).where(eq(treinoExercicios.id, itemId)).run();
+  anunciarEscrita();
 }
 
 /**
@@ -481,6 +503,7 @@ export function removerItemDoTreino(itemId: string): void {
     .set({ arquivadoEm: instante, atualizadoEm: instante })
     .where(and(eq(treinoExercicios.id, itemId), isNull(treinoExercicios.arquivadoEm)))
     .run();
+  anunciarEscrita();
 }
 
 /**
@@ -550,6 +573,7 @@ export function finalizarSessao(sessaoId: string, quando?: number): void {
     .set({ finalizadaEm: quando ?? instante, atualizadoEm: instante })
     .where(and(eq(sessoes.id, sessaoId), isNull(sessoes.finalizadaEm)))
     .run();
+  anunciarEscrita();
 }
 
 /** Finalizou sem querer no meio do treino. `uq_sessao_aberta` recusa se já houver outra aberta. */
@@ -559,9 +583,17 @@ export function reabrirSessao(sessaoId: string): void {
     .set({ finalizadaEm: null, atualizadoEm: instante })
     .where(and(eq(sessoes.id, sessaoId), isNull(sessoes.arquivadoEm)))
     .run();
+  anunciarEscrita();
 }
 
 // ── SÉRIE ──────────────────────────────────────────────────────────────────
+
+/**
+ * Peça `indice: PROXIMO_INDICE` para deixar o banco decidir o número da série.
+ * Índice explícito existe para o teste montar um cenário exato; a UI não deve
+ * usá-lo, porque o número que ela tem é sempre do render anterior.
+ */
+export const PROXIMO_INDICE = -1;
 
 /**
  * `carga` é obrigatória e não aceita `number`: opcional deixaria esquecer,
@@ -573,6 +605,7 @@ export function reabrirSessao(sessaoId: string): void {
 export function registrarSerie(dados: {
   sessaoId: string;
   exercicioId: string;
+  /** Número fixo, ou `PROXIMO_INDICE` para calcular dentro da transação. */
   indice: number;
   tipo?: TipoSerie;
   carga: Carga | null;
@@ -588,12 +621,20 @@ export function registrarSerie(dados: {
   db.transaction((tx) => {
     exigirCargaCompativel(lerExercicio(tx, dados.exercicioId), dados.carga);
 
+    // Ler o índice aqui, e não antes, é o que fecha a janela entre decidir e
+    // gravar. Conta as ARQUIVADAS porque o UNIQUE também não as filtra: desfazer
+    // a série 3 e registrar de novo tem que ir para a 4, não recolidir na 3.
+    const indice =
+      dados.indice === PROXIMO_INDICE
+        ? proximoIndiceNaTransacao(tx, dados.sessaoId, dados.exercicioId)
+        : dados.indice;
+
     tx.insert(series)
       .values({
         id,
         sessaoId: dados.sessaoId,
         exercicioId: dados.exercicioId,
-        indice: dados.indice,
+        indice,
         tipo: dados.tipo,
         cargaG: colunas.cargaG,
         cargaPlacas: colunas.cargaPlacas,
@@ -616,11 +657,26 @@ export function registrarSerie(dados: {
  * não escolhe carga, nem repetição, nem índice — se escolhesse, a regra viraria
  * `if` dentro de `src/app/` e ficaria sem teste.
  */
+/**
+ * O caminho do um-toque. Ignora `sugerida.indice` **de propósito**.
+ *
+ * O índice que a tela carrega foi calculado no render anterior; entre o toque e
+ * o redesenho ele está velho. Dois toques rápidos mandavam o mesmo número, o
+ * segundo batia no `uq_series_sessao_exercicio_indice` e o Henrique via um erro
+ * de SQL no meio do treino (17/08/2026, primeira sessão real).
+ *
+ * Aqui o índice é lido e usado na MESMA transação, então não existe janela entre
+ * decidir e gravar. O UNIQUE continua como rede — mas deixa de ser alcançável
+ * por tela desatualizada, que é o único jeito de o Henrique encostar nele.
+ *
+ * Este é o par do `ultimoRegistro` na tela: aqui o índice nunca colide; lá o
+ * toque repetido não vira série fantasma.
+ */
 export function confirmarSerie(sessaoId: string, sugerida: SerieSugerida): string {
   return registrarSerie({
     sessaoId,
     exercicioId: sugerida.exercicioId,
-    indice: sugerida.indice,
+    indice: PROXIMO_INDICE,
     tipo: sugerida.tipo,
     carga: sugerida.carga,
     repeticoes: sugerida.repeticoes,
@@ -677,6 +733,7 @@ export function desfazerSerie(serieId: string): void {
     .set({ arquivadoEm: instante, atualizadoEm: instante })
     .where(and(eq(series.id, serieId), isNull(series.arquivadoEm)))
     .run();
+  anunciarEscrita();
 }
 
 // ── CORPO E PREFERÊNCIAS ───────────────────────────────────────────────────
@@ -741,6 +798,7 @@ export function registrarMedida(dados: {
       atualizadoEm: instante,
     })
     .run();
+  anunciarEscrita();
   return id;
 }
 
@@ -751,6 +809,7 @@ export function arquivarPesagem(pesagemId: string): void {
     .set({ arquivadoEm: instante, atualizadoEm: instante })
     .where(and(eq(pesagens.id, pesagemId), isNull(pesagens.arquivadoEm)))
     .run();
+  anunciarEscrita();
 }
 
 export function arquivarMedida(medidaId: string): void {
@@ -759,6 +818,7 @@ export function arquivarMedida(medidaId: string): void {
     .set({ arquivadoEm: instante, atualizadoEm: instante })
     .where(and(eq(medidas.id, medidaId), isNull(medidas.arquivadoEm)))
     .run();
+  anunciarEscrita();
 }
 
 /** Upsert na linha única de `perfil`: ela nasce no primeiro dado gravado. */
@@ -768,6 +828,7 @@ export function salvarAltura(alturaMm: number): void {
     .values({ id: ID_PERFIL, alturaMm, criadoEm: instante, atualizadoEm: instante })
     .onConflictDoUpdate({ target: perfil.id, set: { alturaMm, atualizadoEm: instante } })
     .run();
+  anunciarEscrita();
 }
 
 /**
@@ -822,6 +883,7 @@ export function limparObjetivoPeso(): void {
     })
     .where(eq(perfil.id, ID_PERFIL))
     .run();
+  anunciarEscrita();
 }
 
 /** Chaves em `PREF_*` no schema: string solta em dois arquivos é bug de update. */
@@ -831,4 +893,5 @@ export function definirPreferencia(chave: string, valor: string): void {
     .values({ chave, valor, atualizadoEm: instante })
     .onConflictDoUpdate({ target: preferencias.chave, set: { valor, atualizadoEm: instante } })
     .run();
+  anunciarEscrita();
 }

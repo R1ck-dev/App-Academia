@@ -9,17 +9,16 @@
  * domínio.
  */
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/progresso-base';
-import { useSinalDeEscrita } from '@/components/progresso-consulta';
+import { useConsulta } from '@/components/progresso-consulta';
 import { ProgressoDoExercicio, ProgressoExercicios } from '@/components/progresso-exercicios';
 import { ProgressoSessoes } from '@/components/progresso-sessoes';
 import { Tela } from '@/components/tela';
 import { espaco } from '@/constants/tema';
 import { historicoDoExercicio, listarExercicios, sessoesFinalizadas } from '@/db/queries';
-import { exercicios, series, sessoes } from '@/db/schema';
 
 /** O histórico é para olhar, não para rolar: além disso é arqueologia. */
 const SESSOES_NA_LISTA = 30;
@@ -29,23 +28,19 @@ const SERIES_NO_DETALHE = 200;
 type Modo = 'sessoes' | 'exercicios';
 
 export default function Historico() {
-  const sinal = useSinalDeEscrita([series, sessoes, exercicios]);
   const [modo, setModo] = useState<Modo>('sessoes');
   const [exercicioId, setExercicioId] = useState<string | null>(null);
 
-  const dados = useMemo(
-    () => ({
-      sessoes: sessoesFinalizadas(SESSOES_NA_LISTA),
-      exercicios: listarExercicios(),
-    }),
-    [sinal]
-  );
+  const dados = useConsulta('Historico', () => ({
+    sessoes: sessoesFinalizadas(SESSOES_NA_LISTA),
+    exercicios: listarExercicios(),
+  }));
 
   // Consultado à parte: o detalhe é de UM exercício e só existe quando há um
-  // escolhido — carregá-lo junto da lista seria 24 históricos por render.
-  const detalhe = useMemo(
-    () => (exercicioId === null ? null : historicoDoExercicio(exercicioId, SERIES_NO_DETALHE)),
-    [sinal, exercicioId]
+  // escolhido — carregá-lo junto da lista seria 24 históricos por render. O id
+  // entra na chave: sem ele, trocar de exercício devolveria o histórico do outro.
+  const detalhe = useConsulta(`Historico:detalhe:${exercicioId}`, () =>
+    exercicioId === null ? null : historicoDoExercicio(exercicioId, SERIES_NO_DETALHE)
   );
 
   if (detalhe !== null) {

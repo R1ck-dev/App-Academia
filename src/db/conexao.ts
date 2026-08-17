@@ -14,6 +14,7 @@
 
 import type { ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';
 
+import { anunciarEscrita } from './sinal.ts';
 import type * as schema from './schema.ts';
 
 /**
@@ -53,6 +54,12 @@ function ativo(): Banco {
  * Proxy em vez do objeto direto para que os módulos possam fazer `import { db }`
  * no topo, sem que a ordem de carga importe: a resolução acontece na primeira
  * chamada, não no import.
+ *
+ * `transaction` é o único método interceptado: ele avisa `sinal.ts` **depois do
+ * commit**, de uma vez só. É o lugar exato — avisar dentro do callback faria a
+ * tela reler um estado que ainda pode sofrer rollback, e uma transação que
+ * lança nunca avisa, porque a exceção sobe antes. As mutations que escrevem
+ * fora de transação avisam por conta própria.
  */
 export const db: Banco = new Proxy({} as Banco, {
   get(_, prop) {
@@ -60,7 +67,14 @@ export const db: Banco = new Proxy({} as Banco, {
     const valor = banco[prop];
     // Métodos precisam do `this` do banco real; devolver a função crua faria o
     // Drizzle enxergar o proxy vazio como sessão.
-    return typeof valor === 'function' ? valor.bind(banco) : valor;
+    if (typeof valor !== 'function') return valor;
+    const metodo = valor.bind(banco) as (...args: unknown[]) => unknown;
+    if (prop !== 'transaction') return metodo;
+    return (...args: unknown[]) => {
+      const resultado = metodo(...args);
+      anunciarEscrita();
+      return resultado;
+    };
   },
 });
 

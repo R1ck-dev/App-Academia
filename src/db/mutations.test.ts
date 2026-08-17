@@ -59,6 +59,11 @@ function linhas<T = Record<string, unknown>>(sql: string, ...p: unknown[]): T[] 
   })) as T[];
 }
 
+/** O índice que o BANCO decidiu para a série — quem manda desde o toque duplo. */
+function indiceDe(serieId: string): number {
+  return linha<{ indice: number }>('select indice from series where id = ?', serieId).indice;
+}
+
 function contar(sql: string, ...p: unknown[]): number {
   return linha<{ n: number }>(sql, ...p).n;
 }
@@ -386,7 +391,7 @@ describe('série', () => {
     );
   });
 
-  it('confirmarSerie grava exatamente o que o domínio sugeriu', () => {
+  it('confirmarSerie grava o esforço que o domínio sugeriu', () => {
     const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
     const sessao = abrir('Treino A');
 
@@ -402,9 +407,77 @@ describe('série', () => {
     });
 
     assert.deepEqual(
-      linha('select indice, tipo, carga_placas, repeticoes, rir from series where id = ?', serie),
-      { indice: 2, tipo: 'valida', carga_placas: 6, repeticoes: 10, rir: null }
+      linha('select tipo, carga_placas, repeticoes, rir from series where id = ?', serie),
+      { tipo: 'valida', carga_placas: 6, repeticoes: 10, rir: null }
     );
+  });
+
+  /**
+   * O bug do primeiro treino real (17/08/2026): dois toques antes de a tela
+   * redesenhar mandavam o MESMO índice, o segundo batia no UNIQUE e o erro de
+   * SQL aparecia na cara dele no meio da série.
+   */
+  it('confirmarSerie IGNORA o índice da tela — ele é sempre do render anterior', () => {
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const sessao = abrir('Treino A');
+
+    const sugerida = {
+      exercicioId: peck,
+      indice: 7, // número absurdo de propósito: a tela não manda mais no índice
+      tipo: 'valida' as const,
+      carga: placa(5),
+      repeticoes: 10,
+      duracaoS: null,
+      origemCarga: 'plano' as const,
+      origemReps: 'plano' as const,
+    };
+
+    const primeira = confirmarSerie(sessao, sugerida);
+    assert.equal(indiceDe(primeira), 0);
+  });
+
+  it('toque duplo com o mesmo índice não estoura o UNIQUE — grava 0 e 1', () => {
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const sessao = abrir('Treino A');
+
+    const sugerida = {
+      exercicioId: peck,
+      indice: 0,
+      tipo: 'valida' as const,
+      carga: placa(5),
+      repeticoes: 10,
+      duracaoS: null,
+      origemCarga: 'plano' as const,
+      origemReps: 'plano' as const,
+    };
+
+    // Duas chamadas com a MESMA sugestão, como dois toques no mesmo render.
+    const a = confirmarSerie(sessao, sugerida);
+    const b = confirmarSerie(sessao, sugerida);
+
+    assert.deepEqual([indiceDe(a), indiceDe(b)], [0, 1]);
+  });
+
+  it('depois de desfazer, o índice não volta — o slot desfeito continua ocupado', () => {
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const sessao = abrir('Treino A');
+    const sugerida = {
+      exercicioId: peck,
+      indice: 0,
+      tipo: 'valida' as const,
+      carga: placa(5),
+      repeticoes: 10,
+      duracaoS: null,
+      origemCarga: 'plano' as const,
+      origemReps: 'plano' as const,
+    };
+
+    confirmarSerie(sessao, sugerida);
+    const segunda = confirmarSerie(sessao, sugerida);
+    desfazerSerie(segunda);
+
+    // O UNIQUE não filtra arquivadas: reusar o 1 seria erro de gravação.
+    assert.equal(indiceDe(confirmarSerie(sessao, sugerida)), 2);
   });
 });
 
