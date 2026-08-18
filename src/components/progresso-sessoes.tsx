@@ -10,7 +10,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Aviso, ItemLista } from '@/components/progresso-base';
-import { espaco } from '@/constants/tema';
+import { espacoLegado as espaco } from '@/constants/tema';
 import type { ResumoDeSessao } from '@/db/queries';
 import { formatarVolume } from '@/dominio/carga';
 import { formatarDataComAno, formatarHora } from '@/dominio/datas';

@@ -2,29 +2,32 @@
  * O que a sessão foi, depois de finalizada — e o ÚNICO lugar do app onde a ficha
  * pode mudar.
  *
- * Três blocos, na ordem em que interessam: volume (com o que NÃO entrou na
- * conta, nomeado, porque `VolumeDaSessao` não tem um número solto para imprimir
- * no lugar da frase), recordes batidos e as divergências entre o que ele fez e o
- * que a ficha manda. A divergência vira `definirCargaAlvo` só por toque, com os
- * dois números visíveis: plano ≠ realizado, e progressão automática vira loop que
- * não converge.
+ * Quatro blocos, na ordem em que interessam: volume (com o que NÃO entrou na
+ * conta, nomeado, porque um total sozinho tem cara de completo e não é), o que
+ * ficou de fora, as divergências entre o que ele fez e o que a ficha manda, e os
+ * recordes. A divergência vira `definirCargaAlvo` só por toque, com os dois
+ * números visíveis: plano ≠ realizado, e progressão automática vira laço que não
+ * converge.
+ *
+ * A leitura é uma FOTO, tirada uma vez na montagem: a sessão acabou, nada mais
+ * muda nela, e reler a cada escrita faria a divergência sumir da tela no
+ * instante em que ele tocasse em "atualizar a ficha" — justamente quando o
+ * desenho pede que ela vire "ficha atualizada para 6 placas".
  */
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Tela } from '@/components/tela';
-import { ALVO_TOQUE, cores, espaco, fonte } from '@/constants/tema';
+import { motivoCurto } from '@/components/treino-texto';
+import { alvo, cor, espaco, margem, raio, tipo } from '@/constants/tema';
 import { definirCargaAlvo } from '@/db/mutations';
 import { historicoDoExercicio, planoDaSessao, seriesDaSessaoComExercicio } from '@/db/queries';
-import { formatarCarga, formatarVolume } from '@/dominio/carga';
+import { formatarCarga, formatarVolume, valorDaCarga, type Carga } from '@/dominio/carga';
+import { formatarDuracao } from '@/dominio/datas';
 import { divergenciasDoPlano, type Divergencia, type PlanoDaSessao } from '@/dominio/execucao';
 import { calcularRecordes, novoRecorde } from '@/dominio/recordes';
-import {
-  volumeDaSessao,
-  type MotivoForaDoVolume,
-  type VolumeDaSessao,
-} from '@/dominio/volume';
+import { volumeDaSessao, type VolumeDaSessao } from '@/dominio/volume';
 
 type RecordeBatido = { nome: string; carga: boolean; umRM: boolean; reps: boolean };
 
@@ -35,72 +38,137 @@ export function ResumoDaSessao({
   sessaoId: string;
   aoConcluir: () => void;
 }) {
+  const [resumo] = useState(() => montarResumo(sessaoId));
   const [aplicadas, setAplicadas] = useState<readonly string[]>([]);
-  const resumo = useMemo(() => montarResumo(sessaoId), [sessaoId]);
+
+  if (resumo === null) {
+    return (
+      <SafeAreaView style={estilos.area} edges={['top', 'left', 'right']}>
+        <View style={estilos.cabecalho}>
+          <Text style={estilos.titulo}>Treino concluído</Text>
+        </View>
+        <Pressable style={estilos.concluir} onPress={aoConcluir}>
+          <Text style={estilos.concluirTexto}>Voltar</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   function atualizarFicha(d: Divergencia) {
     try {
       definirCargaAlvo(d.itemId, d.sugerida);
       setAplicadas((antes) => [...antes, d.itemId]);
     } catch (erro) {
-      Alert.alert('Não deu para atualizar a ficha', erro instanceof Error ? erro.message : String(erro));
+      Alert.alert(
+        'Não deu para atualizar a ficha',
+        erro instanceof Error ? erro.message : String(erro)
+      );
     }
   }
 
-  if (resumo === null) {
-    return (
-      <Tela titulo="Treino concluído">
-        <Pressable style={estilos.concluir} onPress={aoConcluir}>
-          <Text style={estilos.concluirTexto}>Voltar</Text>
-        </Pressable>
-      </Tela>
-    );
-  }
-
-  const pendentes = resumo.divergencias.filter((d) => !aplicadas.includes(d.itemId));
+  const { volume } = resumo;
+  const aproximado = volume.gramasRepsAproximados > 0;
 
   return (
-    <Tela titulo={resumo.nome}>
-      <ScrollView style={estilos.rolagem} contentContainerStyle={estilos.lista}>
-        <View style={estilos.bloco}>
-          <Text style={estilos.tituloBloco}>Volume</Text>
-          {linhasDoVolume(resumo.volume).map((linha) => (
-            <Text key={linha} style={estilos.linha}>
-              {linha}
-            </Text>
-          ))}
+    <SafeAreaView style={estilos.area} edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerStyle={estilos.rolagem}>
+        <View style={estilos.cabecalho}>
+          <Text style={estilos.kicker}>
+            {resumo.nome}
+            {resumo.duracaoS === null ? '' : ` · ${formatarDuracao(resumo.duracaoS)}`}
+          </Text>
+          <Text style={estilos.titulo}>Terminado</Text>
+          {/* O til não é preciosismo: parte deste total veio de placa convertida,
+              e a conversão assume uma proporcionalidade que alavanca não garante. */}
+          <Text style={estilos.volume}>
+            {aproximado ? '~' : ''}
+            {formatarVolume(volume.gramasReps)}
+          </Text>
+          <Text style={estilos.volumeSub}>{textoDoVolume(volume)}</Text>
         </View>
 
-        {resumo.recordes.length === 0 ? null : (
-          <View style={estilos.bloco}>
-            <Text style={estilos.tituloBloco}>Recordes</Text>
-            {resumo.recordes.map((r) => (
-              <Text key={r.nome} style={estilos.linha}>
-                {r.nome}: {textoDoRecorde(r)}
-              </Text>
-            ))}
-          </View>
-        )}
-
-        {pendentes.length === 0 ? null : (
-          <View style={estilos.bloco}>
-            <Text style={estilos.tituloBloco}>Atualizar a ficha?</Text>
-            {pendentes.map((d) => (
-              <Pressable key={d.itemId} style={estilos.divergencia} onPress={() => atualizarFicha(d)}>
-                <Text style={estilos.linha}>
-                  {d.nome}: ficha {d.noPlano === null ? 'sem carga' : formatarCarga(d.noPlano)} →{' '}
-                  {formatarCarga(d.sugerida)}
+        <View style={estilos.bloco}>
+          <Text style={estilos.tituloDoBloco}>Fora da soma</Text>
+          {volume.foraDaSoma.length === 0 ? (
+            <Text style={estilos.linhaVazia}>
+              {volume.seriesSomadas === 0 ? 'Nada registrado ainda.' : 'Tudo entrou na conta.'}
+            </Text>
+          ) : (
+            volume.foraDaSoma.map((f) => (
+              <View key={`${f.id}-${f.motivo}`} style={estilos.linhaFora}>
+                <Text style={estilos.foraNome} numberOfLines={1}>
+                  {f.nome}
                 </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
+                <Text style={estilos.foraMotivo}>
+                  {f.series}× · {motivoCurto(f.motivo)}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
 
-        <Pressable style={estilos.concluir} onPress={aoConcluir}>
-          <Text style={estilos.concluirTexto}>Pronto</Text>
-        </Pressable>
+        <View style={estilos.secao}>
+          {resumo.divergencias.length === 0 ? (
+            <Text style={estilos.observacao}>A ficha bate com o que você fez. Nada a mudar aqui.</Text>
+          ) : (
+            resumo.divergencias.map((d) => {
+              const aplicada = aplicadas.includes(d.itemId);
+              return (
+                <View key={d.itemId} style={estilos.divergencia}>
+                  <Text style={estilos.divergenciaNome}>{d.nome}</Text>
+                  <Text style={estilos.divergenciaTexto}>
+                    Você fez <Text style={estilos.forte}>{resumo.comoAconteceu[d.itemId]}</Text>. A
+                    ficha diz{' '}
+                    <Text style={estilos.forte}>
+                      {d.noPlano === null ? 'sem carga' : formatarCarga(d.noPlano)}
+                    </Text>
+                    .
+                  </Text>
+                  <Pressable
+                    disabled={aplicada}
+                    style={({ pressed }) => [
+                      estilos.botaoDaDivergencia,
+                      aplicada ? estilos.botaoAplicado : null,
+                      pressed && !aplicada ? estilos.botaoPressionado : null,
+                    ]}
+                    onPress={() => atualizarFicha(d)}
+                  >
+                    <Text style={aplicada ? estilos.textoAplicado : estilos.textoDoBotao}>
+                      {aplicada ? 'Ficha atualizada para ' : 'Atualizar a ficha para '}
+                      {formatarCarga(d.sugerida)}
+                    </Text>
+                  </Pressable>
+                </View>
+              );
+            })
+          )}
+        </View>
+
+        <View style={estilos.secao}>
+          {resumo.recordes.length === 0 ? (
+            <Text style={estilos.observacao}>Nenhum recorde hoje.</Text>
+          ) : (
+            resumo.recordes.map((r) => (
+              <View key={r.nome} style={estilos.recorde}>
+                <View style={estilos.estrela}>
+                  <Text style={estilos.estrelaTexto}>★</Text>
+                </View>
+                <Text style={estilos.recordeTexto}>
+                  {r.nome} · {textoDoRecorde(r)}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
       </ScrollView>
-    </Tela>
+
+      <Pressable
+        style={({ pressed }) => [estilos.concluir, pressed && estilos.concluirTocado]}
+        onPress={aoConcluir}
+      >
+        <Text style={estilos.concluirTexto}>Concluir</Text>
+      </Pressable>
+    </SafeAreaView>
   );
 }
 
@@ -108,20 +176,58 @@ export function ResumoDaSessao({
 
 type Resumo = {
   nome: string;
+  duracaoS: number | null;
   volume: VolumeDaSessao;
   recordes: RecordeBatido[];
   divergencias: readonly Divergencia[];
+  /** itemId → "6 placas em 2 séries, 8 placas em 1 série". */
+  comoAconteceu: Record<string, string>;
 };
 
 function montarResumo(sessaoId: string): Resumo | null {
   const plano = planoDaSessao(sessaoId);
   if (plano === null) return null;
+
+  const series = seriesDaSessaoComExercicio(sessaoId);
+  const ultima = series.reduce((maior, s) => Math.max(maior, s.concluidaEm), 0);
+  const divergencias = divergenciasDoPlano(plano);
+
+  const comoAconteceu: Record<string, string> = {};
+  for (const d of divergencias) {
+    const item = plano.itens.find((i) => i.itemId === d.itemId);
+    if (item !== undefined) comoAconteceu[d.itemId] = cargasComoAconteceram(item.feitas);
+  }
+
   return {
     nome: plano.sessao.nome,
-    volume: volumeDaSessao(seriesDaSessaoComExercicio(sessaoId)),
+    // Do início até a ÚLTIMA série: é o último instante sobre o qual existe
+    // dado. "Agora" incluiria o tempo que ele levou para olhar o resumo.
+    duracaoS: ultima === 0 ? null : Math.round((ultima - plano.sessao.iniciadaEm) / 1000),
+    volume: volumeDaSessao(series),
     recordes: recordesBatidos(plano),
-    divergencias: divergenciasDoPlano(plano),
+    divergencias,
+    comoAconteceu,
   };
+}
+
+/**
+ * "6 placas em 2 séries, 8 placas em 1 série" — o que ele fez, como aconteceu.
+ *
+ * Um número só ("6 placas") esconderia que a última série subiu, que é
+ * exatamente a informação que decide se vale mudar a ficha.
+ */
+function cargasComoAconteceram(feitas: readonly { carga: Carga | null; tipo: string }[]): string {
+  const contagem = new Map<string, { carga: Carga; series: number }>();
+  for (const s of feitas) {
+    if (s.tipo === 'aquecimento' || s.carga === null) continue;
+    const chave = `${s.carga.unidade}:${valorDaCarga(s.carga)}`;
+    const atual = contagem.get(chave);
+    contagem.set(chave, { carga: s.carga, series: (atual?.series ?? 0) + 1 });
+  }
+  const partes = [...contagem.values()]
+    .sort((a, b) => valorDaCarga(a.carga) - valorDaCarga(b.carga))
+    .map((c) => `${formatarCarga(c.carga)} em ${c.series} ${c.series === 1 ? 'série' : 'séries'}`);
+  return partes.length === 0 ? 'as séries de hoje' : partes.join(', ');
 }
 
 /**
@@ -167,68 +273,85 @@ function textoDoRecorde(r: RecordeBatido): string {
   return partes.join(', ');
 }
 
-const FRASE: Readonly<Record<MotivoForaDoVolume, string>> = {
-  aquecimento: 'de aquecimento',
-  sem_carga: 'sem carga',
-  sem_repeticoes: 'sem repetições',
-  placa_sem_calibracao: 'em placa sem peso conhecido',
-};
-
-/**
- * Os quatro motivos viram quatro frases, com os nomes dos exercícios: sem isso o
- * abdominal apareceria contado junto das placas, que é o buraco que
- * `foraDaSoma` existe para fechar.
- */
-function linhasDoVolume(v: VolumeDaSessao): string[] {
-  const linhas = [`${formatarVolume(v.gramasReps)} em ${v.seriesSomadas} séries`];
-
-  if (v.seriesAproximadas > 0) {
-    linhas.push(
-      `inclui ${v.seriesAproximadas} convertidas de placa (~${formatarVolume(v.gramasRepsAproximados)})`
-    );
-  }
-
-  const totais: Readonly<Record<MotivoForaDoVolume, number>> = {
-    placa_sem_calibracao: v.seriesEmPlacaSemCalibracao,
-    sem_carga: v.seriesSemCarga,
-    sem_repeticoes: v.seriesSemRepeticoes,
-    aquecimento: v.seriesAquecimento,
-  };
-
-  for (const motivo of Object.keys(totais) as MotivoForaDoVolume[]) {
-    const total = totais[motivo];
-    if (total === 0) continue;
-    const nomes = v.foraDaSoma.filter((f) => f.motivo === motivo).map((f) => f.nome);
-    const lista = nomes.length === 0 ? '' : ` (${nomes.join(', ')})`;
-    linhas.push(`${total} ${total === 1 ? 'série' : 'séries'} ${FRASE[motivo]}${lista}`);
-  }
-
-  return linhas;
+/** "12 séries somadas · 8 vieram de placa convertida". */
+function textoDoVolume(v: VolumeDaSessao): string {
+  const base = `${v.seriesSomadas} ${v.seriesSomadas === 1 ? 'série somada' : 'séries somadas'}`;
+  if (v.seriesAproximadas === 0) return base;
+  return `${base} · ${v.seriesAproximadas} de placa convertida`;
 }
 
 const estilos = StyleSheet.create({
-  rolagem: { flex: 1 },
-  lista: { gap: espaco.md, paddingBottom: espaco.xl },
+  area: { flex: 1, backgroundColor: cor.fundo },
+  rolagem: { paddingBottom: espaco.seis },
+  cabecalho: { paddingHorizontal: margem.conteudo, paddingTop: espaco.tres, gap: espaco.dois },
+  kicker: { ...tipo.kicker, color: cor.infoKicker },
+  titulo: { fontFamily: tipo.tituloDeTela.fontFamily, fontSize: 38, lineHeight: 40, color: cor.texto },
+  volume: { ...tipo.numeroMedio, color: cor.acaoTexto, marginTop: espaco.tres },
+  volumeSub: { ...tipo.meta, fontSize: 12.5, color: cor.textoSecundario },
+
   bloco: {
-    backgroundColor: cores.superficie,
-    borderRadius: 14,
-    padding: espaco.md,
-    gap: espaco.xs,
+    marginTop: espaco.quatro,
+    marginHorizontal: margem.listaDeCartoes,
+    padding: espaco.quatro,
+    borderRadius: raio.container,
+    backgroundColor: cor.superficie,
+    gap: espaco.dois,
   },
-  tituloBloco: { color: cores.texto, fontSize: fonte.corpo, fontWeight: '700' },
-  linha: { color: cores.textoFraco, fontSize: fonte.legenda, lineHeight: 20 },
+  tituloDoBloco: { ...tipo.kicker, letterSpacing: 1.5, color: cor.textoSecundario },
+  linhaFora: { flexDirection: 'row', justifyContent: 'space-between', gap: espaco.dois },
+  foraNome: { ...tipo.meta, fontSize: 12.5, color: cor.texto, flexShrink: 1 },
+  foraMotivo: { ...tipo.meta, fontSize: 12.5, color: cor.textoTerciario },
+  linhaVazia: { ...tipo.meta, fontSize: 12.5, color: cor.textoSecundario },
+
+  secao: { paddingHorizontal: margem.conteudo, paddingTop: espaco.quatro, gap: espaco.dois },
+  observacao: { ...tipo.meta, fontSize: 12.5, color: cor.textoTerciario },
+
+  // O único contorno de atenção do app inteiro.
   divergencia: {
-    minHeight: ALVO_TOQUE,
-    justifyContent: 'center',
-    borderTopWidth: 1,
-    borderTopColor: cores.borda,
+    padding: espaco.quatro,
+    borderRadius: raio.container,
+    borderWidth: 2,
+    borderColor: cor.acaoContorno,
+    gap: espaco.dois,
   },
-  concluir: {
-    minHeight: ALVO_TOQUE + 8,
-    borderRadius: 12,
-    backgroundColor: cores.destaque,
+  divergenciaNome: { fontFamily: tipo.rotuloForte.fontFamily, fontSize: 14.5, color: cor.texto },
+  divergenciaTexto: { ...tipo.corpoMenor, color: cor.textoSecundario },
+  forte: { fontFamily: tipo.rotuloForte.fontFamily, color: cor.texto },
+  botaoDaDivergencia: {
+    height: 46,
+    borderRadius: raio.pilula,
+    backgroundColor: cor.acao,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: espaco.um,
+  },
+  botaoPressionado: { backgroundColor: cor.acaoPressionada },
+  botaoAplicado: { backgroundColor: cor.infoTinta },
+  textoDoBotao: { ...tipo.rotuloForte, color: cor.sobreAcao },
+  textoAplicado: { ...tipo.rotuloForte, color: cor.infoTintaTextoForte },
+
+  recorde: { flexDirection: 'row', alignItems: 'center', gap: espaco.dois },
+  estrela: {
+    width: 34,
+    height: 34,
+    borderRadius: raio.pilula,
+    backgroundColor: cor.acao,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  concluirTexto: { color: cores.fundo, fontSize: fonte.corpo, fontWeight: '700' },
+  estrelaTexto: { fontSize: 15, color: cor.sobreAcao },
+  recordeTexto: { ...tipo.corpoMenor, fontSize: 13.5, color: cor.texto, flexShrink: 1 },
+
+  concluir: {
+    height: 60,
+    marginHorizontal: margem.listaDeCartoes,
+    marginBottom: espaco.seis,
+    borderRadius: raio.pilula,
+    borderWidth: 2,
+    borderColor: cor.borda,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  concluirTocado: { backgroundColor: cor.acaoTinta },
+  concluirTexto: { fontFamily: tipo.itemForte.fontFamily, fontSize: 16, color: cor.texto },
 });

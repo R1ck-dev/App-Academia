@@ -46,6 +46,74 @@ export function formatarDataHora(instante: number): string {
   return `${formatarData(instante)} às ${formatarHora(instante)}`;
 }
 
+const DIAS_DA_SEMANA = [
+  'Domingo',
+  'Segunda',
+  'Terça',
+  'Quarta',
+  'Quinta',
+  'Sexta',
+  'Sábado',
+] as const;
+
+const MESES = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+] as const;
+
+/**
+ * "Segunda · 17 de agosto" — o cabeçalho de quem abre o app para treinar.
+ *
+ * Escrito à mão em vez de `toLocaleDateString`: o `Intl` do Hermes vem sem os
+ * dados de locale em build de release, e a mesma chamada que devolve "segunda"
+ * no simulador devolve "Monday" no aparelho.
+ */
+export function rotuloDoDiaLongo(instante: number): string {
+  const d = new Date(instante);
+  return `${DIAS_DA_SEMANA[d.getDay()]} · ${d.getDate()} de ${MESES[d.getMonth()]}`;
+}
+
+const MS_DIA = 24 * 60 * 60 * 1000;
+
+/**
+ * Quantos dias LOCAIS separam os dois instantes.
+ *
+ * Conta a distância entre as datas, não entre os relógios: treinar às 22h de
+ * ontem e olhar às 8h de hoje são 10 horas e **um** dia — `Math.floor` sobre a
+ * diferença bruta responderia zero, e a tela diria "hoje" para o treino de
+ * ontem.
+ */
+export function diasEntreDias(instante: number, agora: number): number {
+  const de = new Date(instante);
+  const ate = new Date(agora);
+  const meiaNoiteDe = new Date(de.getFullYear(), de.getMonth(), de.getDate()).getTime();
+  const meiaNoiteAte = new Date(ate.getFullYear(), ate.getMonth(), ate.getDate()).getTime();
+  return Math.round((meiaNoiteAte - meiaNoiteDe) / MS_DIA);
+}
+
+/**
+ * "hoje" · "ontem" · "há 3 dias" · "nunca" — o que o cartão do treino mostra à
+ * direita. Data futura (relógio do aparelho mexido) vira "hoje" em vez de "há
+ * −2 dias".
+ */
+export function rotuloDeQuandoFoi(instante: number | null, agora: number): string {
+  if (instante === null) return 'nunca';
+  const dias = diasEntreDias(instante, agora);
+  if (dias <= 0) return 'hoje';
+  if (dias === 1) return 'ontem';
+  return `há ${dias} dias`;
+}
+
 const SEGUNDOS_POR_MINUTO = 60;
 
 /** 600 -> "10 min" · 90 -> "1 min 30 s" · 45 -> "45 s". */

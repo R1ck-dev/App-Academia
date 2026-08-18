@@ -17,7 +17,7 @@ import { useConsulta } from '@/components/progresso-consulta';
 import { ProgressoDoExercicio, ProgressoExercicios } from '@/components/progresso-exercicios';
 import { ProgressoSessoes } from '@/components/progresso-sessoes';
 import { Tela } from '@/components/tela';
-import { espaco } from '@/constants/tema';
+import { espacoLegado as espaco } from '@/constants/tema';
 import { historicoDoExercicio, listarExercicios, sessoesFinalizadas } from '@/db/queries';
 
 /** O histórico é para olhar, não para rolar: além disso é arqueologia. */

@@ -15,7 +15,7 @@ import { CorpoObjetivo } from '@/components/corpo-objetivo';
 import { CorpoPeso } from '@/components/corpo-peso';
 import { useConsulta } from '@/components/progresso-consulta';
 import { Tela } from '@/components/tela';
-import { espaco } from '@/constants/tema';
+import { espacoLegado as espaco } from '@/constants/tema';
 import { historicoMedidas, historicoPeso, obterPerfil } from '@/db/queries';
 import { pesoAtual } from '@/dominio/corpo';
 

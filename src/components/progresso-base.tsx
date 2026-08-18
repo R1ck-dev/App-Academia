@@ -11,7 +11,7 @@
 
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { ALVO_TOQUE, cores, espaco, fonte } from '@/constants/tema';
+import { ALVO_TOQUE, cores, espacoLegado as espaco, tamanho as fonte } from '@/constants/tema';
 
 export function Cartao({
   titulo,

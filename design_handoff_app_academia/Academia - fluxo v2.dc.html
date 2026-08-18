@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/organic-e9b55943-d746-462c-a058-7c037414851b/styles.css">
+<script src="_ds/organic-e9b55943-d746-462c-a058-7c037414851b/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#eee7db;font-family:"Figtree",system-ui,sans-serif;color:#201e1d}
+a{color:#8c491a}a:hover{color:#643312}
+.hd{padding:46px 52px 8px;max-width:900px}
+.row{display:flex;align-items:flex-start;gap:26px;padding:26px 52px 12px}
+.step{display:flex;flex-direction:column;gap:12px;flex:none;scroll-margin-top:16px}
+.slab{display:flex;align-items:center;gap:10px}
+.sn{width:30px;height:30px;border-radius:999px;background:#c67139;color:#f5ead8;display:flex;align-items:center;justify-content:center;font:700 14px "Figtree",sans-serif;flex:none}
+.st{font:700 15px/1.2 "Figtree",sans-serif}
+.ss{margin:0;font:400 12.5px/1.5 "Figtree",sans-serif;color:#645c50;max-width:390px}
+.bez{padding:11px;background:#2e2b25;border-radius:42px;box-shadow:0 16px 44px rgba(46,43,37,.22)}
+.scr{width:390px;height:844px;overflow:hidden;position:relative;display:flex;flex-direction:column;border-radius:32px;background:#f5ead8;color:#201e1d}
+.arw{align-self:center;margin-top:300px;font-size:26px;color:#c0b6a5;flex:none}
+@keyframes voa{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(0,232px) scale(.22);opacity:0}}
+</style></helmet>
+
+<div class="hd">
+<div style="font:700 11px/1 'Figtree',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#728157">Direção 2 · Organic</div>
+<h1 style="font-family:'Caprasimo',sans-serif;font-size:46px;line-height:1.04;margin:12px 0 0;max-width:640px">O treino como um fluxo, não como um menu</h1>
+<p style="font:400 14.5px/1.65 'Figtree',sans-serif;color:#645c50;max-width:600px;margin:14px 0 0">Estilo trocado por completo: creme e terracota, tudo arredondado, Caprasimo no lugar da condensada. As oito telas estão dispostas na ordem em que ele passa por elas e todas funcionam — e compartilham a mesma sessão, então registrar uma série na tela 2 muda o resumo da 3 e o histórico da 4.</p>
+</div>
+
+<div class="row">
+
+<div class="step" id="f1">
+<div class="slab"><span class="sn">1</span><span class="st">Abrir o app</span></div>
+<div class="bez"><div class="scr">
+  <div style="display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 24px;font-size:11.5px;color:#82796a;flex:none"><span>18:41</span><span>4G · 62%</span></div>
+  <div style="padding:16px 24px 0">
+    <div style="font:700 11px/1 'Figtree',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#728157">Segunda · 17 de agosto</div>
+    <h2 style="font-family:'Caprasimo',sans-serif;font-size:40px;line-height:1.02;margin:10px 0 0">Bora treinar</h2>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;padding:22px 20px 0">
+    <sc-for list="{{ treinos }}" as="t" hint-placeholder-count="3">
+      <button onClick="{{ t.tocar }}" style="display:flex;align-items:center;gap:16px;width:100%;text-align:left;padding:16px 18px;border-radius:28px;border:2px solid {{ t.borda }};background:{{ t.fundo }};cursor:pointer;font-family:inherit;color:inherit">
+        <span style="width:58px;height:58px;border-radius:999px;background:{{ t.circulo }};color:#f9f4ed;font-family:'Caprasimo',sans-serif;font-size:26px;display:flex;align-items:center;justify-content:center;flex:none">{{ t.letra }}</span>
+        <span style="flex:1;min-width:0">
+          <span style="display:block;font:700 17px/1.2 'Figtree',sans-serif">{{ t.grupos }}</span>
+          <span style="display:block;font-size:12.5px;color:#645c50;margin-top:3px">{{ t.conta }}</span>
+        </span>
+        <span style="font-size:11.5px;color:#82796a;flex:none">{{ t.quando }}</span>
+      </button>
+    </sc-for>
+  </div>
+  <div style="margin:20px 24px 0;padding:16px 18px;border-radius:28px;background:#e1eecc">
+    <div style="font:700 14px/1.35 'Figtree',sans-serif">Sessão de ontem ficou aberta</div>
+    <div style="font-size:12.5px;color:#56633f;margin-top:4px">Treino B · 18 séries · última às 19:34</div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn" style="border-radius:999px;background:#7a8a5e;color:#f9f4ed;height:42px;padding:0 18px;font-size:13.5px;border:0;cursor:pointer">Continuar nela</button>
+      <button class="btn" style="border-radius:999px;background:transparent;border:2px solid #aebf92;color:#3d472b;height:42px;padding:0 18px;font-size:13.5px;cursor:pointer">Fechar às 19:34</button>
+    </div>
+  </div>
+  <div style="margin-top:auto;padding:0 24px 26px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:12px;color:#82796a">Último backup há 47 dias</span>
+    <span style="font:700 13px 'Figtree',sans-serif;color:#8c491a">Exportar</span>
+  </div>
+</div></div>
+<p class="ss">Toque num treino: A e C entram vazios (é a estreia — a carga vem da ficha), B entra na sessão de hoje já em andamento.</p>
+</div>
+
+<div class="arw">→</div>
+
+<div class="step" id="f2">
+<div class="slab"><span class="sn">2</span><span class="st">Executar · um toque por série</span></div>
+<div class="bez"><div class="scr">
+  <div style="display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 24px;font-size:11.5px;color:#82796a;flex:none"><span>19:07</span><span>4G · 62%</span></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 0">
+    <div>
+      <div style="font:700 16px/1.2 'Figtree',sans-serif">{{ sessaoNome }}</div>
+      <div style="font-size:11.5px;color:#82796a;margin-top:1px">{{ contagem }} · tela acordada</div>
+    </div>
+    <button style="border-radius:999px;border:2px solid #dcd3c4;background:transparent;height:40px;padding:0 16px;font:700 12.5px 'Figtree',sans-serif;cursor:pointer;color:#645c50">Finalizar</button>
+  </div>
+  <div style="display:flex;gap:7px;padding:16px 20px 0">
+    <sc-for list="{{ trilha }}" as="p" hint-placeholder-count="9">
+      <span style="width:{{ p.d }};height:{{ p.d }};border-radius:999px;background:{{ p.cor }};border:2px solid {{ p.borda }}"></span>
+    </sc-for>
+  </div>
+  <div style="padding:24px 24px 0">
+    <h3 style="font-family:'Caprasimo',sans-serif;font-size:30px;line-height:1.06;margin:0;text-wrap:pretty">{{ atualNome }}</h3>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <span style="border-radius:999px;background:#ffe1d0;color:#8c491a;font:700 12px 'Figtree',sans-serif;padding:5px 12px">{{ atualPosicao }}</span>
+      <span style="font-size:12.5px;color:#645c50">{{ atualProcedencia }}</span>
+      <span style="font-size:12.5px;color:#82796a">{{ atualDescanso }}</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;padding:18px 20px 0">
+    <button onClick="{{ menos }}" style="width:70px;height:70px;border-radius:999px;border:2px solid #dcd3c4;background:transparent;font-size:32px;line-height:1;cursor:pointer;color:#645c50;flex:none">−</button>
+    <div style="flex:1;text-align:center">
+      <div style="font-family:'Caprasimo',sans-serif;font-size:84px;line-height:.9">{{ atualNumero }}</div>
+      <div style="font-size:14.5px;color:#645c50;margin-top:2px">{{ atualUnidade }}</div>
+    </div>
+    <button onClick="{{ mais }}" style="width:70px;height:70px;border-radius:999px;border:0;background:#c67139;color:#f9f4ed;font-size:32px;line-height:1;cursor:pointer;flex:none">+</button>
+  </div>
+  <div style="padding:4px 24px 0;font-size:11.5px;color:#82796a;min-height:16px">{{ atualAprox }}</div>
+  <sc-if value="{{ temReps }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 20px 0;padding:12px 18px;border-radius:28px;background:#ebddc5">
+    <span style="font-size:13px;color:#645c50">repetições <strong style="font-family:'Caprasimo',sans-serif;font-size:22px;margin-left:8px;color:#201e1d">{{ atualReps }}</strong></span>
+    <span style="display:flex;gap:8px">
+      <button onClick="{{ menosReps }}" style="width:44px;height:40px;border-radius:999px;border:2px solid #dcd3c4;background:transparent;font-size:19px;cursor:pointer;color:#645c50">−</button>
+      <button onClick="{{ maisReps }}" style="width:44px;height:40px;border-radius:999px;border:2px solid #dcd3c4;background:transparent;font-size:19px;cursor:pointer;color:#645c50">+</button>
+    </span>
+  </div>
+  </sc-if>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:18px 24px 0">
+    <span style="font:700 12.5px 'Figtree',sans-serif">{{ contadorSeries }}</span>
+    <sc-if value="{{ podeDesfazer }}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{ desfazer }}" style="border:0;background:transparent;font:700 12.5px 'Figtree',sans-serif;color:#8c491a;cursor:pointer;padding:0">desfazer última</button>
+    </sc-if>
+  </div>
+  <div style="display:flex;align-items:stretch;gap:7px;padding:9px 24px 0;min-height:56px">
+    <sc-for list="{{ chips }}" as="c" hint-placeholder-count="4">
+      <span style="flex:1;min-width:0;height:54px;border-radius:999px;background:{{ c.fundo }};border:{{ c.borda }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">
+        <span style="font-family:'Caprasimo',sans-serif;font-size:21px;line-height:1;color:{{ c.cor }}">{{ c.principal }}</span>
+        <span style="font-size:10.5px;line-height:1;color:{{ c.corSub }}">{{ c.sub }}</span>
+      </span>
+    </sc-for>
+  </div>
+  <div style="margin-top:auto;padding:0 24px 10px;font-size:12px;color:#82796a">{{ aSeguir }}</div>
+  <div style="display:flex;gap:10px;padding:0 20px 26px">
+    <button onClick="{{ registrarAquec }}" style="width:96px;height:96px;border-radius:999px;border:2px dashed #aebf92;background:transparent;cursor:pointer;color:#56633f;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:none">
+      <span style="font:700 13.5px 'Figtree',sans-serif">Aquec.</span><span style="font-size:10.5px;color:#728157">não conta</span>
+    </button>
+    <button onClick="{{ registrar }}" style="flex:1;height:96px;border-radius:999px;border:0;background:#c67139;color:#f9f4ed;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
+      <span style="font-family:'Caprasimo',sans-serif;font-size:25px">Registrar</span>
+      <span style="font-size:12.5px;opacity:.88">{{ botaoResumo }}</span>
+    </button>
+  </div>
+  {{ voo }}
+</div></div>
+<p class="ss">O botão diz o que vai gravar. Aquecimento é o círculo tracejado, também de um toque. O número voa para a fila de séries quando você registra.</p>
+</div>
+
+<div class="arw">→</div>
+
+<div class="step" id="f3">
+<div class="slab"><span class="sn">3</span><span class="st">Resumo · calculado de verdade</span></div>
+<div class="bez"><div class="scr">
+  <div style="display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 24px;font-size:11.5px;color:#82796a;flex:none"><span>19:41</span><span>4G · 61%</span></div>
+  <div style="padding:14px 24px 0">
+    <div style="font:700 11px/1 'Figtree',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#728157">{{ sessaoNome }} · 1 h 04</div>
+    <h2 style="font-family:'Caprasimo',sans-serif;font-size:38px;margin:8px 0 0">Terminado</h2>
+    <div style="font-family:'Caprasimo',sans-serif;font-size:44px;line-height:1.05;margin-top:20px;color:#8c491a">{{ volumeTexto }}</div>
+    <div style="font-size:12.5px;color:#645c50;margin-top:4px">{{ volumeSub }}</div>
+  </div>
+  <div style="margin:18px 20px 0;padding:16px 18px;border-radius:28px;background:#ebddc5">
+    <div style="font:700 11px/1 'Figtree',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#645c50">Fora da soma</div>
+    <div style="margin-top:10px">
+      <sc-for list="{{ fora }}" as="f" hint-placeholder-count="4">
+        <div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0"><span>{{ f.nome }}</span><span style="color:#82796a;flex:none">{{ f.motivo }}</span></div>
+      </sc-for>
+      <sc-if value="{{ semFora }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:12.5px;color:#645c50">{{ foraVazioTexto }}</div>
+      </sc-if>
+    </div>
+  </div>
+  <div style="padding:18px 24px 0">
+    <sc-for list="{{ divergencias }}" as="d" hint-placeholder-count="1">
+      <div style="padding:16px 18px;border-radius:28px;border:2px solid #f6a06b;margin-bottom:10px">
+        <div style="font:700 14.5px/1.35 'Figtree',sans-serif">{{ d.nome }}</div>
+        <div style="font-size:13px;color:#645c50;margin-top:6px;line-height:1.5">Você fez <strong style="color:#201e1d">{{ d.feito }}</strong>. A ficha diz <strong style="color:#201e1d">{{ d.plano }}</strong>.</div>
+        <button onClick="{{ d.atualizar }}" style="margin-top:12px;width:100%;height:46px;border-radius:999px;border:0;background:{{ d.corBotao }};color:{{ d.corTexto }};font:700 14px 'Figtree',sans-serif;cursor:pointer">{{ d.rotulo }}</button>
+      </div>
+    </sc-for>
+    <sc-if value="{{ semDivergencia }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:12.5px;color:#82796a">A ficha bate com o que você fez. Nada a mudar aqui.</div>
+    </sc-if>
+  </div>
+  <div style="padding:16px 24px 0">
+    <sc-for list="{{ recordes }}" as="r" hint-placeholder-count="1">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="width:34px;height:34px;border-radius:999px;background:#c67139;color:#f9f4ed;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none">★</span>
+        <span style="font-size:13.5px">{{ r.nome }} · {{ r.valor }}</span>
+      </div>
+    </sc-for>
+    <sc-if value="{{ semRecorde }}" hint-placeholder-val="{{ true }}">
+      <div style="font-size:12.5px;color:#82796a">Nenhum recorde hoje.</div>
+    </sc-if>
+  </div>
+  <button style="margin:auto 20px 26px;height:60px;border-radius:999px;border:2px solid #dcd3c4;background:transparent;font:700 16px 'Figtree',sans-serif;cursor:pointer;color:#201e1d">Concluir</button>
+</div></div>
+<p class="ss">O volume soma só o que é somável a partir do que você registrou na tela 2 — o resto sai da conta com nome e motivo. A divergência aparece sozinha quando a carga de hoje difere da ficha.</p>
+</div>
+
+<div class="arw">→</div>
+
+<div class="step" id="f4">
+<div class="slab"><span class="sn">4</span><span class="st">Histórico · estou evoluindo?</span></div>
+<div class="bez"><div class="scr">
+  <div style="display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 24px;font-size:11.5px;color:#82796a;flex:none"><span>21:12</span><span>4G · 55%</span></div>
+  <div style="padding:14px 24px 0"><h2 style="font-family:'Caprasimo',sans-serif;font-size:34px;margin:0">Histórico</h2></div>
+  <div style="display:flex;gap:7px;flex-wrap:wrap;padding:14px 20px 0">
+    <sc-for list="{{ exChips }}" as="c" hint-placeholder-count="6">
+      <button onClick="{{ c.tocar }}" style="border-radius:999px;padding:7px 14px;font:700 12.5px 'Figtree',sans-serif;cursor:pointer;border:2px solid {{ c.borda }};background:{{ c.fundo }};color:{{ c.cor }}">{{ c.nome }}</button>
+    </sc-for>
+  </div>
+  <div style="padding:20px 24px 0">
+    <h3 style="font-family:'Caprasimo',sans-serif;font-size:26px;margin:0">{{ detNome }}</h3>
+    <div style="font-size:12px;color:#82796a;margin-top:3px">{{ detSub }}</div>
+  </div>
+  <sc-if value="{{ detTemCurva }}" hint-placeholder-val="{{ true }}">
+  <div style="padding:14px 20px 0">
+    <div style="font-size:11.5px;color:#645c50">{{ detEixo }}</div>
+    <div style="position:relative;width:350px;height:158px;margin-top:8px">
+      <svg viewBox="0 0 350 132" style="position:absolute;left:0;top:0;width:350px;height:132px;overflow:visible">
+        <sc-for list="{{ grade }}" as="g" hint-placeholder-count="3">
+          <line x1="34" x2="348" y1="{{ g.y }}" y2="{{ g.y }}" stroke="#dcd3c4" stroke-width="2" stroke-linecap="round"></line>
+        </sc-for>
+        <polyline points="{{ linha }}" fill="none" stroke="#c67139" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        <sc-for list="{{ pontos }}" as="p" hint-placeholder-count="6">
+          <circle cx="{{ p.cx }}" cy="{{ p.cy }}" r="7" fill="#f5ead8" stroke="#c67139" stroke-width="4"></circle>
+        </sc-for>
+      </svg>
+      <sc-for list="{{ grade }}" as="g" hint-placeholder-count="3">
+        <span style="position:absolute;left:0;top:{{ g.top }};font-size:11px;color:#82796a">{{ g.rotulo }}</span>
+      </sc-for>
+      <sc-for list="{{ pontos }}" as="p" hint-placeholder-count="6">
+        <span style="position:absolute;top:138px;left:{{ p.left }};transform:translateX(-50%);font-size:10.5px;color:#82796a;white-space:nowrap">{{ p.data }}</span>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ detUmPonto }}" hint-placeholder-val="{{ false }}">
+  <div style="margin:16px 20px 0;padding:18px;border-radius:28px;background:#ebddc5">
+    <div style="font-family:'Caprasimo',sans-serif;font-size:38px;line-height:1">20 kg</div>
+    <div style="font-size:12.5px;color:#645c50;margin-top:6px;line-height:1.5">Uma sessão registrada, em 12/08.</div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ detVazio }}" hint-placeholder-val="{{ false }}">
+  <div style="margin:16px 20px 0;padding:18px;border-radius:28px;background:#ebddc5">
+    <div style="font-size:14px;line-height:1.5">Nenhuma série registrada aqui ainda.</div>
+    <div style="font-size:12.5px;color:#645c50;margin-top:6px">Na ficha do Treino A: 3×10 · 2 placas.</div>
+  </div>
+  </sc-if>
+  <div style="padding:18px 24px 0">
+    <sc-for list="{{ detRecordes }}" as="r" hint-placeholder-count="4">
+      <div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-bottom:0"><span style="color:#645c50">{{ r.rotulo }}</span><span style="color:{{ r.cor }}">{{ r.valor }}</span></div>
+    </sc-for>
+  </div>
+  <sc-if value="{{ detConvite }}" hint-placeholder-val="{{ true }}">
+  <div style="margin:auto 20px 26px;padding:16px 18px;border-radius:28px;background:#e1eecc">
+    <div style="font:700 14px/1.4 'Figtree',sans-serif">Sabe quanto pesa cada placa?</div>
+    <div style="font-size:12.5px;color:#56633f;margin-top:5px;line-height:1.5">O histórico ganha uma leitura em quilos.</div>
+    <button onClick="{{ abrirCalibrar }}" style="margin-top:12px;width:100%;height:46px;border-radius:999px;border:0;background:#7a8a5e;color:#f9f4ed;font:700 14px 'Figtree',sans-serif;cursor:pointer">Calibrar a placa → tela 7</button>
+  </div>
+  </sc-if>
+  <sc-if value="{{ detCalibrado }}" hint-placeholder-val="{{ false }}">
+  <div style="margin:auto 20px 26px;padding:16px 18px;border-radius:28px;background:#e1eecc">
+    <div style="font:700 14px 'Figtree',sans-serif">{{ calTitulo }}</div>
+    <div style="font-size:12.5px;color:#56633f;margin-top:5px;line-height:1.5">{{ calLeitura }}</div>
+    <button onClick="{{ descalibrar }}" style="margin-top:10px;border:0;background:transparent;font:700 12.5px 'Figtree',sans-serif;color:#56633f;cursor:pointer;padding:0">descalibrar</button>
+  </div>
+  </sc-if>
+</div></div>
+<p class="ss">Troque de exercício nos chips: placa progride em placas, esteira em minutos, abdominal em repetições — e cada um só mostra os recordes que a sua unidade permite.</p>
+</div>
+
+<div class="arw">→</div>
+
+<div class="step" id="f5">
+<div class="slab"><span class="sn">5</span><span class="st">Corpo · começa vazia</span></div>
+<div class="bez"><div class="scr">
+  <div style="display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 24px;font-size:11.5px;color:#82796a;flex:none"><span>07:02</span><span>4G · 88%</span></div>
+  <div style="padding:14px 24px 0"><h2 style="font-family:'Caprasimo',sans-serif;font-size:34px;margin:0">Corpo</h2></div>
+  <sc-if value="{{ corpoVazio }}" hint-placeholder-val="{{ true }}">
+  <div style="flex:1;display:flex;flex-direction:column;padding:0 24px">
+    <div style="margin-top:30px;display:flex;align-items:center;gap:18px">
+      <span style="width:96px;height:96px;border-radius:999px;border:3px dashed #dcd3c4;flex:none"></span>
+      <div>
+        <div style="font-family:'Caprasimo',sans-serif;font-size:34px;line-height:1;color:#a19786">— kg</div>
+        <div style="font-size:13px;color:#645c50;margin-top:6px;max-width:180px">Nenhuma pesagem ainda</div>
+      </div>
+    </div>
+    <button onClick="{{ ligarDemo }}" style="height:74px;margin-top:26px;border-radius:999px;border:0;background:#c67139;color:#f9f4ed;font-family:'Caprasimo',sans-serif;font-size:22px;cursor:pointer">Registrar peso</button>
+    <div style="margin-top:26px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-radius:28px;background:#ebddc5"><span style="font-size:14px">Sua altura</span><span style="font:700 13px 'Figtree',sans-serif;color:#8c491a">informar</span></div>
+      <div style="font-size:11.5px;color:#82796a;margin:-4px 4px 0">Sem altura não há IMC.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-radius:28px;background:#ebddc5"><span style="font-size:14px">Um objetivo de peso</span><span style="font:700 13px 'Figtree',sans-serif;color:#8c491a">definir</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-radius:28px;background:#ebddc5"><span style="font-size:14px">Medidas com a trena</span><span style="font:700 13px 'Figtree',sans-serif;color:#8c491a">medir</span></div>
+    </div>
+    <div style="margin-top:auto;margin-bottom:26px;font-size:12px;color:#82796a;line-height:1.55">Tendência do peso: aparece com 4 pesagens em 14 dias. Antes disso não existe número honesto, então não existe lugar reservado para um.</div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ corpoCheio }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;display:flex;flex-direction:column;padding:0 24px;overflow:hidden">
+    <div style="margin-top:22px;display:flex;align-items:center;gap:18px">
+      <svg viewBox="0 0 100 100" style="width:104px;height:104px;flex:none">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#dcd3c4" stroke-width="12"></circle>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#c67139" stroke-width="12" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="129" transform="rotate(-90 50 50)"></circle>
+      </svg>
+      <div>
+        <div style="font-family:'Caprasimo',sans-serif;font-size:40px;line-height:1">78,4 kg</div>
+        <div style="font-size:12.5px;color:#645c50;margin-top:4px">média de 7 dias: <strong>78,9 kg</strong></div>
+        <div style="font-size:12.5px;color:#8c491a;margin-top:2px">faltam 3,4 kg · de 82 para 75</div>
+      </div>
+    </div>
+    <svg viewBox="0 0 340 78" style="width:100%;height:78px;margin-top:18px">
+      <polyline points="0,12 42,16 84,10 126,24 168,20 210,33 252,30 296,42 340,48" fill="none" stroke="#dcd3c4" stroke-width="2.5" stroke-linecap="round"></polyline>
+      <polyline points="0,15 42,17 84,19 126,22 168,26 210,31 252,35 296,41 340,46" fill="none" stroke="#c67139" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+    </svg>
+    <div style="font-size:11.5px;color:#82796a">linha fina: cada pesagem · grossa: média de 7 dias</div>
+    <div style="margin-top:20px;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:#645c50">Tendência (63 dias)</span><span>−0,4 kg por semana · 9 pesagens</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:#645c50">IMC (1,75 m)</span><span>25,60 · sobrepeso</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:#645c50">Faixa normal</span><span>56,6 – 76,2 kg</span></div>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:7px;flex-wrap:wrap">
+      <span style="border-radius:999px;background:#e1eecc;color:#3d472b;font-size:12px;padding:6px 13px">cintura 84,0 cm</span>
+      <span style="border-radius:999px;background:#e1eecc;color:#3d472b;font-size:12px;padding:6px 13px">braço D 33,5 cm</span>
+      <span style="border-radius:999px;background:#e1eecc;color:#3d472b;font-size:12px;padding:6px 13px">peito 98,0 cm</span>
+      <span style="border-radius:999px;border:2px solid #aebf92;color:#56633f;font-size:12px;padding:5px 13px">3 de 12 partes</span>
+    </div>
+    <button onClick="{{ desligarDemo }}" style="margin:auto 0 26px;height:66px;border-radius:999px;border:0;background:#c67139;color:#f9f4ed;font-family:'Caprasimo',sans-serif;font-size:20px;cursor:pointer">Registrar peso</button>
+  </div>
+  </sc-if>
+</div></div>
+<p class="ss">O estado real de hoje é a tela vazia — toque em “Registrar peso” para ver a versão com seis meses de dados, e de novo para voltar.</p>
+</div>
+
+</div>
+
+<div class="row">
+
+<div class="step" id="f6">
+<div class="slab"><span class="sn">6</span><span class="st">Ficha e catálogo · uma tela só</span></div>
+<div class="bez"><div class="scr">
+  <div style="display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 24px;font-size:11.5px;color:#82796a;flex:none"><span>21:30</span><span>4G · 50%</span></div>
+  <div style="padding:14px 24px 0">
+    <div style="font:700 11px/1 'Figtree',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#728157">Em casa, sentado</div>
+    <h2 style="font-family:'Caprasimo',sans-serif;font-size:30px;line-height:1.06;margin:8px 0 0">Treino C — Peito, ombros e tríceps</h2>
+    <div style="font-size:12px;color:#82796a;margin-top:4px">toque para editar · arraste para reordenar</div>
+  </div>
+  <div style="flex:1;overflow:hidden;padding:14px 20px 0;display:flex;flex-direction:column;gap:8px">
+    <sc-for list="{{ fichaItens }}" as="i" hint-placeholder-count="8">
+      <button onClick="{{ abrirItem }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:24px;background:#ebddc5;border:0;cursor:pointer;font-family:inherit;text-align:left;color:inherit">
+        <span style="width:26px;height:26px;border-radius:999px;background:#f5ead8;color:#82796a;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none">{{ i.n }}</span>
+        <span style="flex:1;min-width:0;font-size:14px;line-height:1.25;text-wrap:pretty">{{ i.nome }}</span>
+        <span style="font:700 13px 'Figtree',sans-serif;color:#8c491a;flex:none;white-space:nowrap">{{ i.alvo }}</span>
+      </button>
+    </sc-for>
+    <button style="height:50px;border-radius:999px;border:2px dashed #c0b6a5;background:transparent;font:700 14px 'Figtree',sans-serif;color:#645c50;cursor:pointer;margin-top:4px">+ adicionar do catálogo</button>
+  </div>
+  <sc-if value="{{ sheetItem }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:rgba(46,43,37,.5);display:flex;flex-direction:column;justify-content:flex-end">
+    <div style="background:#f5ead8;border-radius:34px 34px 0 0;padding:22px 22px 28px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-family:'Caprasimo',sans-serif;font-size:22px;line-height:1.1;max-width:250px">Elevação Frontal c/ Halteres</span>
+        <button onClick="{{ fecharItem }}" style="border:0;background:transparent;font:700 13px 'Figtree',sans-serif;color:#8c491a;cursor:pointer">fechar</button>
+      </div>
+      <div style="font-size:11.5px;color:#82796a;margin-top:4px">medido em kg · degrau de 1 kg</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px">
+        <div><div style="font-size:12px;color:#645c50;margin-bottom:5px">Séries</div><input value="4" style="width:100%;height:46px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;padding:0 16px;font:inherit;font-size:15px"></div>
+        <div><div style="font-size:12px;color:#645c50;margin-bottom:5px">Repetições</div><input value="12" style="width:100%;height:46px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;padding:0 16px;font:inherit;font-size:15px"></div>
+        <div><div style="font-size:12px;color:#645c50;margin-bottom:5px">Carga alvo</div><input value="4 kg" style="width:100%;height:46px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;padding:0 16px;font:inherit;font-size:15px"></div>
+        <div><div style="font-size:12px;color:#645c50;margin-bottom:5px">Descanso</div><input value="90 s" style="width:100%;height:46px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;padding:0 16px;font:inherit;font-size:15px"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button onClick="{{ fecharItem }}" style="flex:1;height:52px;border-radius:999px;border:0;background:#c67139;color:#f9f4ed;font:700 15px 'Figtree',sans-serif;cursor:pointer">Salvar</button>
+        <button onClick="{{ fecharItem }}" style="flex:none;height:52px;padding:0 18px;border-radius:999px;border:2px solid #dcd3c4;background:transparent;font:700 14px 'Figtree',sans-serif;color:#645c50;cursor:pointer">Tirar da ficha</button>
+      </div>
+      <div style="font-size:11.5px;color:#82796a;margin-top:14px;line-height:1.5">Trocar a unidade de medição fica no catálogo.</div>
+    </div>
+  </div>
+  </sc-if>
+</div></div>
+<p class="ss">A ficha é a lista; o catálogo é a folha que sobe. As propriedades do exercício se editam onde você o encontra.</p>
+</div>
+
+<div class="step" id="f7">
+<div class="slab"><span class="sn">7</span><span class="st">Calibrar a placa</span></div>
+<div class="bez"><div class="scr">
+  <div style="display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 24px;font-size:11.5px;color:#82796a;flex:none"><span>21:14</span><span>4G · 54%</span></div>
+  <div style="padding:14px 24px 0;opacity:.45">
+    <h2 style="font-family:'Caprasimo',sans-serif;font-size:26px;margin:0">Cadeira Extensora</h2>
+    <div style="font-size:12px;color:#82796a;margin-top:3px">medido em placa · 6 sessões · 23 séries</div>
+    <svg viewBox="0 0 350 130" style="width:100%;height:130px;margin-top:14px">
+      <polyline points="34,104 96,104 158,68 220,68 282,32 344,32" fill="none" stroke="#c67139" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+    </svg>
+  </div>
+  <div style="margin-top:auto;background:#f9f4ed;border-radius:34px 34px 0 0;padding:24px 22px 28px;box-shadow:0 -12px 32px rgba(46,43,37,.14)">
+    <h3 style="font-family:'Caprasimo',sans-serif;font-size:26px;margin:0;line-height:1.1">Quanto pesa cada placa?</h3>
+    <div style="font-size:13px;color:#645c50;margin-top:8px;line-height:1.55">Está na etiqueta da máquina.</div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <sc-for list="{{ opcoesPlaca }}" as="o" hint-placeholder-count="4">
+        <button onClick="{{ o.tocar }}" style="flex:1;min-width:74px;height:56px;border-radius:999px;border:2px solid {{ o.borda }};background:{{ o.fundo }};color:{{ o.cor }};font:700 16px 'Figtree',sans-serif;cursor:pointer">{{ o.t }}</button>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button style="flex:1;height:52px;border-radius:999px;border:2px solid #dcd3c4;background:transparent;font:700 15px 'Figtree',sans-serif;color:#645c50;cursor:pointer">Não sei</button>
+      <button onClick="{{ descalibrar }}" style="flex:none;height:52px;padding:0 18px;border-radius:999px;border:0;background:transparent;font:700 13.5px 'Figtree',sans-serif;color:#8c491a;cursor:pointer">descalibrar</button>
+    </div>
+  </div>
+</div></div>
+<p class="ss">O convite vive no histórico daquela máquina, nunca durante o treino. Escolha 5 kg aqui e a tela 4 passa a ler “(~30 kg)”; o gráfico continua em placas.</p>
+</div>
+
+<div class="step" id="f8">
+<div class="slab"><span class="sn">8</span><span class="st">Backup · o único exemplar</span></div>
+<div class="bez"><div class="scr">
+  <div style="display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 24px;font-size:11.5px;color:#82796a;flex:none"><span>21:38</span><span>4G · 48%</span></div>
+  <div style="padding:14px 24px 0">
+    <h2 style="font-family:'Caprasimo',sans-serif;font-size:34px;margin:0">Backup</h2>
+    <div style="margin-top:20px;padding:20px;border-radius:28px;background:#ffe1d0">
+      <div style="font-family:'Caprasimo',sans-serif;font-size:24px;line-height:1.1;color:#8c491a">Último backup: 30/06</div>
+      <div style="font-size:13px;color:#643312;margin-top:8px;line-height:1.55">Há 47 dias. Desde então: 14 sessões e 9 pesagens que só existem neste aparelho.</div>
+    </div>
+    <button style="width:100%;height:70px;margin-top:18px;border-radius:999px;border:0;background:#c67139;color:#f9f4ed;font-family:'Caprasimo',sans-serif;font-size:21px;cursor:pointer">Exportar tudo</button>
+  </div>
+  <div style="margin-top:auto;padding:0 24px 26px">
+    <div style="font-size:13px;color:#645c50;line-height:1.55">Restaurar substitui tudo neste aparelho.</div>
+    <button onClick="{{ abrirRestaurar }}" style="width:100%;height:52px;margin-top:12px;border-radius:999px;border:2px solid #dcd3c4;background:transparent;font:700 15px 'Figtree',sans-serif;cursor:pointer;color:#201e1d">Restaurar de um arquivo</button>
+  </div>
+  <sc-if value="{{ sheetRestaurar }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:rgba(46,43,37,.55);display:flex;align-items:center;padding:22px">
+    <div style="background:#f9f4ed;border-radius:34px;padding:24px">
+      <h3 style="font-family:'Caprasimo',sans-serif;font-size:24px;margin:0;line-height:1.15">Restaurar apaga o que está aqui</h3>
+      <div style="font-size:13.5px;color:#645c50;margin-top:10px;line-height:1.55">Neste aparelho existem <strong style="color:#201e1d">151 sessões</strong> e <strong style="color:#201e1d">96 pesagens</strong>. Não há como voltar.</div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button onClick="{{ fecharRestaurar }}" style="flex:1;height:50px;border-radius:999px;border:2px solid #dcd3c4;background:transparent;font:700 15px 'Figtree',sans-serif;color:#645c50;cursor:pointer">Cancelar</button>
+        <button onClick="{{ fecharRestaurar }}" style="flex:1;height:50px;border-radius:999px;border:0;background:#c67139;color:#f9f4ed;font:700 15px 'Figtree',sans-serif;cursor:pointer">Escolher arquivo</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+</div></div>
+<p class="ss">O lembrete não mora aqui: mora na tela 1, antes de começar, em uma linha. Alarme vermelho toda abertura ensina a ignorar vermelho.</p>
+</div>
+
+</div>
+
+<p style="padding:8px 52px 48px;font:400 13px/1.6 'Figtree',sans-serif;color:#645c50;max-width:760px">Peça o que quiser em cima disto: “troca o creme por um fundo escuro”, “junta as telas <a href="#f4">4</a> e <a href="#f7">7</a>”, “o resumo devia caber sem rolar”, “quero ver o teclado de digitar carga”.</p>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2400,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  state = {
+    treino: 'B', feitas: null, ajuste: null, ajusteReps: null,
+    ultima: Date.now() - 43000, agora: Date.now(),
+    voando: false, vooId: 0, vooTexto: '',
+    exSel: 'ext', calibrado: null, corpoDemo: false,
+    sheetItem: false, sheetRestaurar: false, atualizadas: {}
+  };
+
+  componentDidMount() {
+    this.setState({ feitas: this.feitasIniciais() });
+    this.t = setInterval(() => this.setState({ agora: Date.now() }), 1000);
+  }
+  componentWillUnmount() { clearInterval(this.t); if (this.vooT) clearTimeout(this.vooT); }
+
+  ex() {
+    return {
+      slp: { nome: 'Seated Leg Press', modo: 'carga', incr: 2500 },
+      smi: { nome: 'Smith Press', modo: 'carga', incr: 1000 },
+      ext: { nome: 'Cadeira Extensora', modo: 'carga', incr: 1 },
+      flx: { nome: 'Cadeira Flexora', modo: 'carga', incr: 1 },
+      lgp: { nome: 'Leg Press', modo: 'carga', incr: 1, gpp: 5000 },
+      pan: { nome: 'Panturrilha', modo: 'carga', incr: 2500 },
+      abu: { nome: 'Cadeira Abdutora', modo: 'carga', incr: 1 },
+      est: { nome: 'Esteira', modo: 'tempo', incr: 60 },
+      abs: { nome: 'Abdominal Infra Solo', modo: 'corpo', incr: 1 },
+      rem: { nome: 'Remada Alta c/ Barra', modo: 'carga', incr: 1 },
+      rba: { nome: 'Remada Baixa c/ Barra', modo: 'carga', incr: 1 },
+      pkd: { nome: 'Peck Dorsal', modo: 'carga', incr: 1 },
+      fcp: { nome: 'Facepull', modo: 'carga', incr: 1 },
+      rmp: { nome: 'Rosca Martelo Polia', modo: 'carga', incr: 2500 },
+      rdp: { nome: 'Rosca Direta Polia', modo: 'carga', incr: 1 },
+      elv: { nome: 'Elevação Lateral c/ Halter', modo: 'carga', incr: 1000 },
+      asu: { nome: 'Abdominal Supra Solo', modo: 'corpo', incr: 1 },
+      sup: { nome: 'Supino Inclinado Barra', modo: 'carga', incr: 2500 },
+      spm: { nome: 'Supino Máquina', modo: 'carga', incr: 1 },
+      pkk: { nome: 'Peck Deck', modo: 'carga', incr: 1 },
+      par: { nome: 'Paralela Articulada', modo: 'carga', incr: 1 },
+      dsv: { nome: 'Desenvolvimento Articulado', modo: 'carga', incr: 1 },
+      efr: { nome: 'Elevação Frontal c/ Halteres', modo: 'carga', incr: 1000 },
+      tfr: { nome: 'Tríceps Francês Halter', modo: 'carga', incr: 1000 }
+    };
+  }
+  ficha() {
+    const kg = (v) => ({ un: 'kg', v }), pl = (v) => ({ un: 'placa', v });
+    if (this.state.treino === 'A') return [
+      { id: 'rem', series: 4, reps: 10, carga: pl(5) }, { id: 'rba', series: 4, reps: 10, carga: pl(5) },
+      { id: 'pkd', series: 4, reps: 10, carga: pl(4) }, { id: 'fcp', series: 3, reps: 10, carga: pl(2) },
+      { id: 'rmp', series: 4, reps: 10, carga: kg(5000) }, { id: 'rdp', series: 4, reps: 10, carga: pl(3) },
+      { id: 'elv', series: 4, reps: 12, carga: kg(5000) }, { id: 'asu', series: 4, reps: 12, carga: null }
+    ];
+    if (this.state.treino === 'C') return [
+      { id: 'sup', series: 4, reps: 10, carga: kg(10000) }, { id: 'spm', series: 4, reps: 10, carga: pl(6) },
+      { id: 'pkk', series: 4, reps: 10, carga: pl(5) }, { id: 'par', series: 4, reps: 10, carga: pl(4) },
+      { id: 'dsv', series: 4, reps: 10, carga: pl(2) }, { id: 'efr', series: 4, reps: 12, carga: kg(4000) },
+      { id: 'tfr', series: 4, reps: 10, carga: kg(6000) }, { id: 'abs', series: 4, reps: 12, carga: null }
+    ];
+    return [
+      { id: 'slp', series: 4, reps: 10, carga: kg(20000) }, { id: 'smi', series: 4, reps: 10, carga: kg(14000) },
+      { id: 'ext', series: 4, reps: 10, carga: pl(6) }, { id: 'flx', series: 4, reps: 10, carga: pl(5) },
+      { id: 'lgp', series: 4, reps: 10, carga: pl(4) }, { id: 'pan', series: 4, reps: 10, carga: kg(20000) },
+      { id: 'abu', series: 4, reps: 10, carga: pl(3) }, { id: 'est', series: 1, reps: null, carga: null, dur: 600 },
+      { id: 'abs', series: 0, reps: 12, carga: null }
+    ];
+  }
+  anteriores() {
+    const kg = (v) => ({ un: 'kg', v }), pl = (v) => ({ un: 'placa', v });
+    if (this.state.treino !== 'B') return {};
+    return { slp: kg(20000), smi: kg(14000), ext: pl(6), flx: pl(6), lgp: pl(4), pan: kg(20000), abu: pl(3) };
+  }
+  feitasIniciais() {
+    const kg = (v) => ({ un: 'kg', v }), pl = (v) => ({ un: 'placa', v });
+    const n = (q, carga, reps) => Array.from({ length: q }, (_, k) => ({ i: k + 1, tipo: 'valida', carga, reps }));
+    return {
+      slp: n(4, kg(20000), 10), smi: n(4, kg(14000), 10), ext: n(5, pl(6), 10),
+      flx: [{ i: 1, tipo: 'aquecimento', carga: pl(4), reps: 10 }, { i: 2, tipo: 'valida', carga: pl(6), reps: 10 }, { i: 3, tipo: 'valida', carga: pl(6), reps: 10 }],
+      lgp: [], pan: [], abu: [], est: [], abs: [{ i: 1, tipo: 'valida', carga: null, reps: 12 }]
+    };
+  }
+  feitasDe(t) { return t === 'B' ? this.feitasIniciais() : {}; }
+
+  gppDe(id) { return id === 'lgp' ? 5000 : (id === 'ext' ? this.state.calibrado : null); }
+  num(n) { return n.toLocaleString('pt-BR', { maximumFractionDigits: 1 }); }
+  numCarga(c) { return c.un === 'placa' ? String(c.v) : this.num(c.v / 1000); }
+  rotUn(c) { return c.un === 'placa' ? (c.v === 1 ? 'placa' : 'placas') : 'kg'; }
+  fmtCarga(c) { return c ? this.numCarga(c) + ' ' + this.rotUn(c) : 'peso corporal'; }
+
+  itens() {
+    const ex = this.ex(), f = this.state.feitas || this.feitasIniciais();
+    return this.ficha().map((it) => {
+      const e = ex[it.id], fe = f[it.id] || [];
+      const contam = fe.filter((s) => s.tipo !== 'aquecimento').length;
+      const faltam = it.series > 0 ? Math.max(0, it.series - contam) : 0;
+      return { ...it, e, fe, contam, faltam, completo: it.series > 0 ? faltam === 0 : fe.length > 0 };
+    });
+  }
+  atual() {
+    const its = this.itens();
+    return its.find((i) => i.series > 0 && i.faltam > 0) || its.find((i) => !i.completo) || its[its.length - 1];
+  }
+  sugestao(it) {
+    const aj = this.state.ajuste;
+    if (it.e.modo === 'tempo') {
+      const dur = aj && aj.id === it.id ? aj.v : it.dur;
+      return { modo: 'tempo', dur, origem: aj && aj.id === it.id ? 'ajuste_de_hoje' : 'plano' };
+    }
+    if (it.e.modo === 'corpo') {
+      return { modo: 'corpo', carga: null, reps: this.state.ajusteReps != null ? this.state.ajusteReps : it.reps, origem: 'plano' };
+    }
+    const ult = it.fe.filter((s) => s.tipo !== 'aquecimento').slice(-1)[0];
+    const ant = this.anteriores()[it.id];
+    let carga = null, origem = 'sem_referencia';
+    if (aj && aj.id === it.id) { carga = { un: aj.un, v: aj.v }; origem = 'ajuste_de_hoje'; }
+    else if (ult && ult.carga) {
+      carga = ult.carga;
+      origem = ant && ant.un === carga.un && ant.v === carga.v ? 'mesmo_indice_sessao_anterior' : 'ajuste_de_hoje';
+    } else if (ant) { carga = ant; origem = 'mesmo_indice_sessao_anterior'; }
+    else if (it.carga) { carga = it.carga; origem = 'plano'; }
+    return { modo: 'carga', carga, reps: this.state.ajusteReps != null ? this.state.ajusteReps : it.reps, origem };
+  }
+  palavraOrigem(o) {
+    return { ajuste_de_hoje: 'o que você fez hoje', mesmo_indice_sessao_anterior: 'igual à semana passada', plano: 'da ficha', sem_referencia: 'primeira vez — informe a carga' }[o];
+  }
+  passo(dir) {
+    const it = this.atual(), s = this.sugestao(it);
+    if (s.modo === 'tempo') { this.setState({ ajuste: { id: it.id, v: Math.max(60, (s.dur || 600) + dir * it.e.incr) } }); return; }
+    if (s.modo === 'corpo') { this.setState({ ajusteReps: Math.max(1, (s.reps || 12) + dir) }); return; }
+    if (!s.carga) return;
+    const un = s.carga.un, p = un === 'placa' ? 1 : it.e.incr;
+    this.setState({ ajuste: { id: it.id, un, v: Math.max(p, s.carga.v + dir * p) } });
+  }
+  passoReps(dir) {
+    const s = this.sugestao(this.atual());
+    this.setState({ ajusteReps: Math.max(1, (s.reps || 10) + dir) });
+  }
+  grava(tipo) {
+    const it = this.atual(), s = this.sugestao(it);
+    const f = { ...(this.state.feitas || this.feitasIniciais()) };
+    const arr = (f[it.id] || []).slice();
+    arr.push({ i: arr.length + 1, tipo, carga: s.carga || null, reps: s.reps || null, dur: s.dur || null });
+    f[it.id] = arr;
+    const texto = s.modo === 'tempo' ? String(Math.round(s.dur / 60)) : (s.carga ? this.numCarga(s.carga) : String(s.reps));
+    this.setState({ feitas: f, ajuste: null, ajusteReps: null, ultima: Date.now(), voando: true, vooId: this.state.vooId + 1, vooTexto: texto });
+    if (this.vooT) clearTimeout(this.vooT);
+    this.vooT = setTimeout(() => this.setState({ voando: false }), 540);
+  }
+  desfaz() {
+    const its = this.itens(), f = { ...(this.state.feitas || this.feitasIniciais()) }, alvo = this.atual();
+    let id = (f[alvo.id] || []).length ? alvo.id : null;
+    if (!id) { const idx = its.findIndex((i) => i.id === alvo.id); for (let k = idx - 1; k >= 0; k--) { if ((f[its[k].id] || []).length) { id = its[k].id; break; } } }
+    if (!id) return;
+    f[id] = f[id].slice(0, -1);
+    this.setState({ feitas: f, ajuste: null, ajusteReps: null });
+  }
+  volume() {
+    let g = 0, aprox = 0, somadas = 0;
+    const fora = {};
+    this.itens().forEach((it) => {
+      it.fe.forEach((s) => {
+        const add = (motivo) => { const k = it.id + '|' + motivo; fora[k] = fora[k] || { nome: it.e.nome, motivo, n: 0 }; fora[k].n++; };
+        if (s.tipo === 'aquecimento') return add('aquecimento');
+        if (it.e.modo === 'tempo') return add('só duração');
+        if (!s.carga) return add('peso corporal');
+        if (s.carga.un === 'placa') {
+          const gpp = this.gppDe(it.id);
+          if (!gpp) return add('placa sem calibração');
+          const x = s.carga.v * gpp * (s.reps || 0);
+          g += x; aprox += x; somadas++; return;
+        }
+        g += s.carga.v * (s.reps || 0); somadas++;
+      });
+    });
+    return { g, aprox, somadas, fora: Object.values(fora) };
+  }
+  divergencias() {
+    return this.itens().filter((it) => {
+      const v = it.fe.filter((s) => s.tipo !== 'aquecimento' && s.carga);
+      return v.length > 0 && it.carga && v[v.length - 1].carga.un === it.carga.un && v[v.length - 1].carga.v !== it.carga.v;
+    }).map((it) => {
+      const v = it.fe.filter((s) => s.tipo !== 'aquecimento' && s.carga);
+      const c = v[v.length - 1].carga;
+      const ok = !!this.state.atualizadas[it.id];
+      const grupos = [];
+      v.forEach((s) => {
+        const ultimo = grupos[grupos.length - 1];
+        if (ultimo && ultimo.v === s.carga.v) ultimo.n++;
+        else grupos.push({ v: s.carga.v, un: s.carga.un, n: 1 });
+      });
+      const feito = grupos.map((g) => this.fmtCarga({ un: g.un, v: g.v }) + (g.n > 1 ? ' em ' + g.n + ' séries' : ' em 1 série')).join(', ');
+      return {
+        nome: it.e.nome, feito, plano: this.fmtCarga(it.carga),
+        rotulo: ok ? 'Ficha atualizada para ' + this.fmtCarga(c) : 'Atualizar a ficha para ' + this.fmtCarga(c),
+        corBotao: ok ? '#e1eecc' : '#c67139', corTexto: ok ? '#3d472b' : '#f9f4ed',
+        atualizar: () => this.setState({ atualizadas: { ...this.state.atualizadas, [it.id]: true } })
+      };
+    });
+  }
+  recordesHoje() {
+    const ant = this.anteriores();
+    return this.itens().filter((it) => {
+      const v = it.fe.filter((s) => s.tipo !== 'aquecimento' && s.carga);
+      if (!v.length) return false;
+      const max = v.reduce((m, s) => (s.carga.v > m ? s.carga.v : m), 0);
+      return ant[it.id] ? max > ant[it.id].v : true;
+    }).slice(0, 3).map((it) => {
+      const v = it.fe.filter((s) => s.tipo !== 'aquecimento' && s.carga);
+      const max = v.reduce((m, s) => (s.carga.v > m ? s.carga.v : m), 0);
+      return { nome: it.e.nome, valor: 'maior carga: ' + this.fmtCarga({ un: v[0].carga.un, v: max }) };
+    });
+  }
+
+  renderVals() {
+    const st = this.state;
+    const it = this.atual(), s = this.sugestao(it), its = this.itens();
+    const feitasTotal = its.reduce((a, i) => a + i.contam, 0);
+    const alvoTotal = its.reduce((a, i) => a + i.series, 0);
+    const resta = Math.max(0, st.ultima + 90000 - st.agora);
+    const mm = Math.floor(resta / 60000), ss = Math.floor((resta % 60000) / 1000);
+    const idx = its.findIndex((i) => i.id === it.id);
+    const vol = this.volume(), div = this.divergencias(), rec = this.recordesHoje();
+
+    const seis = ['24/6', '1/7', '8/7', '22/7', '5/8', '12/8'];
+    const DET = {
+      ext: { nome: 'Cadeira Extensora', sub: 'medido em placa · 6 sessões · 23 séries', un: 'pl', convite: true,
+        eixo: 'carga por sessão, em placas — um ponto por dia, aquecimento fora', val: [4, 4, 5, 5, 6, 6], datas: seis,
+        rec: [{ r: 'Maior carga', v: '6 placas' }, { r: 'Maior volume em uma sessão', v: '108 placa·rep' }, { r: 'Mais repetições', v: '12 · com 5 placas' }, { r: '1RM estimado', v: 'não existe em placa', f: true }] },
+      flx: { nome: 'Cadeira Flexora', sub: 'medido em placa · 6 sessões · 22 séries', un: 'pl', convite: true,
+        eixo: 'carga por sessão, em placas — um ponto por dia, aquecimento fora', val: [5, 5, 5, 6, 6, 6], datas: seis,
+        rec: [{ r: 'Maior carga', v: '6 placas' }, { r: 'Maior volume em uma sessão', v: '96 placa·rep' }, { r: '1RM estimado', v: 'não existe em placa', f: true }] },
+      est: { nome: 'Esteira', sub: 'medido em tempo · 4 sessões', un: 'min', convite: false,
+        eixo: 'duração por sessão, em minutos — aqui o que progride é o segundo', val: [8, 10, 10, 12], datas: ['22/7', '5/8', '10/8', '12/8'],
+        rec: [{ r: 'Maior duração', v: '12 min' }, { r: 'Tempo somado', v: '40 min' }, { r: 'Volume', v: 'não se soma: sem carga e sem repetição', f: true }] },
+      abs: { nome: 'Abdominal Supra Solo', sub: 'peso corporal · 9 sessões', un: 'reps', convite: false,
+        eixo: 'repetições por sessão — em peso corporal é a repetição que progride', val: [36, 40, 44, 44, 48, 48], datas: seis,
+        rec: [{ r: 'Mais repetições em uma série', v: '14' }, { r: 'Mais repetições no dia', v: '48' }, { r: 'Maior carga', v: 'carga nula: peso corporal', f: true }] },
+      pan: { nome: 'Panturrilha', sub: 'medido em kg · degrau de 2,5 kg', umPonto: true, convite: false, un: 'kg',
+        rec: [{ r: 'Maior carga', v: '20 kg' }, { r: '1RM estimado', v: '~26,7 kg' }, { r: 'Séries no total', v: '4' }] },
+      fcp: { nome: 'Facepull', sub: 'medido em placa · degrau de 1 placa', vazio: true, convite: false, un: 'pl', rec: [] }
+    };
+    const d = DET[st.exSel] || DET.ext;
+    const vv = d.val || [];
+    const mn = vv.length ? Math.min(...vv) : 0, mx = vv.length ? Math.max(...vv) : 1;
+    const span = (mx - mn) || 1, lo = mn - span * 0.55, hi = mx + span * 0.55;
+    const cx = (k) => (vv.length > 1 ? 34 + (k * 310) / (vv.length - 1) : 190);
+    const cy = (v) => 124 - ((v - lo) / (hi - lo)) * 108;
+    const pontos = vv.map((v, k) => ({ cx: cx(k), cy: cy(v), left: cx(k) + 'px', data: d.datas[k] }));
+    const linha = vv.map((v, k) => cx(k) + ',' + cy(v)).join(' ');
+    const grade = vv.length ? [mn, (mn + mx) / 2, mx].map((v) => ({ y: cy(v), top: (cy(v) - 8) + 'px', rotulo: this.num(v) + ' ' + d.un })) : [];
+
+    const chipEx = (id, nome) => ({
+      nome, tocar: () => this.setState({ exSel: id }),
+      fundo: st.exSel === id ? '#c67139' : 'transparent',
+      cor: st.exSel === id ? '#f9f4ed' : '#645c50',
+      borda: st.exSel === id ? '#c67139' : '#dcd3c4'
+    });
+    const cardTreino = (letra, grupos, conta, quando, t) => ({
+      letra, grupos, conta, quando, tocar: () => this.setState({ treino: t, feitas: this.feitasDe(t), ajuste: null, ajusteReps: null, atualizadas: {}, ultima: Date.now() - 91000 }),
+      fundo: st.treino === t ? '#ffe1d0' : '#ebddc5',
+      borda: st.treino === t ? '#c67139' : 'transparent',
+      circulo: st.treino === t ? '#c67139' : '#a19786'
+    });
+
+    return {
+      treinos: [
+        cardTreino('A', 'Costas, bíceps e ombros', '8 exercícios · 31 séries', 'há 5 dias', 'A'),
+        cardTreino('B', 'Pernas', '8 exercícios · 29 séries', 'há 3 dias', 'B'),
+        cardTreino('C', 'Peito, ombros e tríceps', '8 exercícios · 32 séries', 'ontem', 'C')
+      ],
+      sessaoNome: st.treino === 'B' ? 'Treino B — Pernas' : st.treino === 'A' ? 'Treino A — Costas e bíceps' : 'Treino C — Peito e tríceps',
+      contagem: feitasTotal + ' de ' + alvoTotal + ' séries',
+      trilha: its.map((i, k) => ({
+        d: k === idx ? '18px' : '14px',
+        cor: i.completo ? '#c67139' : (k === idx ? '#ffe1d0' : 'transparent'),
+        borda: i.completo ? '#c67139' : (k === idx ? '#c67139' : '#dcd3c4')
+      })),
+      atualNome: it.e.nome,
+      atualPosicao: it.series === 0 ? 'fora da ficha · ' + (it.fe.length + 1) + 'ª' : (it.contam + 1) + 'ª de ' + it.series,
+      atualProcedencia: s.modo === 'carga' ? this.palavraOrigem(s.origem) : (s.modo === 'tempo' ? 'da ficha' : 'peso corporal'),
+      atualDescanso: resta > 0 ? '· descanso ' + mm + ':' + String(ss).padStart(2, '0') : '· descanso concluído',
+      atualNumero: s.modo === 'tempo' ? String(Math.round(s.dur / 60)) : (s.modo === 'corpo' ? String(s.reps) : (s.carga ? this.numCarga(s.carga) : '—')),
+      atualUnidade: s.modo === 'tempo' ? 'minutos' : (s.modo === 'corpo' ? 'repetições · sem carga' : (s.carga ? this.rotUn(s.carga) : 'informe a carga')),
+      atualAprox: this.gppDe(it.id) && s.carga && s.carga.un === 'placa' ? '~' + this.num((s.carga.v * this.gppDe(it.id)) / 1000) + ' kg' : '',
+      temReps: s.modo === 'carga', atualReps: s.reps,
+      menos: () => this.passo(-1), mais: () => this.passo(1), menosReps: () => this.passoReps(-1), maisReps: () => this.passoReps(1),
+      registrar: () => this.grava('valida'), registrarAquec: () => this.grava('aquecimento'),
+      botaoResumo: s.modo === 'tempo' ? Math.round(s.dur / 60) + ' min' : (s.modo === 'corpo' ? s.reps + ' reps · peso corporal' : (s.carga ? this.fmtCarga(s.carga) + ' × ' + s.reps : 'informe a carga')),
+      chips: it.fe.map((f) => ({
+        principal: f.dur ? String(Math.round(f.dur / 60)) : (f.carga ? this.numCarga(f.carga) : String(f.reps)),
+        sub: f.tipo === 'aquecimento' ? 'aquec' : (f.dur ? 'min' : (f.carga ? '×' + f.reps : 'reps')),
+        fundo: f.tipo === 'aquecimento' ? 'transparent' : '#ebddc5',
+        cor: f.tipo === 'aquecimento' ? '#56633f' : '#201e1d',
+        corSub: f.tipo === 'aquecimento' ? '#728157' : '#82796a',
+        borda: f.tipo === 'aquecimento' ? '2px dashed #aebf92' : '2px solid transparent'
+      })).concat(Array.from({ length: it.faltam }, () => ({
+        principal: s.modo === 'tempo' ? String(Math.round((s.dur || 0) / 60)) : (s.carga ? this.numCarga(s.carga) : String(s.reps)),
+        sub: s.modo === 'tempo' ? 'min' : (s.carga ? '×' + s.reps : 'reps'),
+        fundo: 'transparent', cor: '#bdb3a2', corSub: '#bdb3a2', borda: '2px dashed #d2c8b7'
+      }))),
+      contadorSeries: it.series === 0
+        ? it.fe.length + (it.fe.length === 1 ? ' série feita · fora da ficha' : ' séries feitas · fora da ficha')
+        : it.contam + ' de ' + it.series + ' feitas · ' + (it.faltam === 1 ? 'falta 1' : 'faltam ' + it.faltam),
+      podeDesfazer: it.fe.length > 0, desfazer: () => this.desfaz(),
+      aSeguir: its[idx + 1] ? 'a seguir: ' + its[idx + 1].e.nome + (its[idx + 1].carga ? ' · ' + this.fmtCarga(its[idx + 1].carga) : '') : 'último exercício do treino',
+      voo: st.voando ? React.createElement('div', { key: 'v' + st.vooId, style: { position: 'absolute', left: 0, right: 0, top: '318px', textAlign: 'center', fontFamily: "'Caprasimo',sans-serif", fontSize: '84px', lineHeight: '.9', color: '#c67139', pointerEvents: 'none', animation: 'voa 540ms cubic-bezier(.4,0,.2,1) forwards' } }, st.vooTexto) : null,
+
+      volumeTexto: (vol.aprox > 0 ? '~' : '') + this.num(Math.round(vol.g / 1000)) + ' kg·rep',
+      volumeSub: vol.somadas + ' séries somadas' + (vol.aprox > 0 ? ' · ' + this.num(Math.round(vol.aprox / 1000)) + ' kg·rep vieram de placa convertida' : ''),
+      fora: vol.fora.map((f) => ({ nome: f.nome, motivo: f.n + '× · ' + f.motivo })), semFora: vol.fora.length === 0,
+      foraVazioTexto: feitasTotal === 0 ? 'Nada registrado ainda.' : 'Tudo entrou na conta.',
+      divergencias: div, semDivergencia: div.length === 0,
+      recordes: rec, semRecorde: rec.length === 0,
+
+      exChips: [chipEx('ext', 'Extensora'), chipEx('flx', 'Flexora'), chipEx('est', 'Esteira'), chipEx('abs', 'Abdominal'), chipEx('pan', 'Panturrilha'), chipEx('fcp', 'Facepull')],
+      detNome: d.nome, detSub: d.sub, detEixo: d.eixo,
+      detTemCurva: !!d.val, detUmPonto: !!d.umPonto, detVazio: !!d.vazio,
+      pontos, linha, grade,
+      detRecordes: d.rec.map((r) => ({ rotulo: r.r, valor: r.v, cor: r.f ? '#82796a' : '#201e1d' })),
+      detConvite: d.convite && !st.calibrado, detCalibrado: d.convite && !!st.calibrado,
+      abrirCalibrar: () => this.setState({ exSel: 'ext' }),
+      descalibrar: () => this.setState({ calibrado: null }),
+      opcoesPlaca: [2500, 5000, 7500, 10000].map((g) => ({
+        t: this.num(g / 1000) + ' kg', tocar: () => this.setState({ calibrado: g, exSel: 'ext' }),
+        fundo: st.calibrado === g ? '#7a8a5e' : 'transparent',
+        cor: st.calibrado === g ? '#f9f4ed' : '#645c50',
+        borda: st.calibrado === g ? '#7a8a5e' : '#dcd3c4'
+      })),
+      calTitulo: 'Calibrada: ' + this.num((st.calibrado || 0) / 1000) + ' kg por placa',
+      calLeitura: '6 placas (~' + this.num((6 * (st.calibrado || 0)) / 1000) + ' kg)',
+
+      corpoVazio: !st.corpoDemo, corpoCheio: st.corpoDemo,
+      ligarDemo: () => this.setState({ corpoDemo: true }), desligarDemo: () => this.setState({ corpoDemo: false }),
+
+      fichaItens: [
+        { n: '1', nome: 'Supino Inclinado Barra', alvo: '4×10 · 10 kg' },
+        { n: '2', nome: 'Supino Máquina', alvo: '4×10 · 6 placas' },
+        { n: '3', nome: 'Peck Deck', alvo: '4×10 · 5 placas' },
+        { n: '4', nome: 'Paralela Articulada', alvo: '4×10 · 4 placas' },
+        { n: '5', nome: 'Desenvolvimento Articulado', alvo: '4×10 · 2 placas' },
+        { n: '6', nome: 'Elevação Frontal c/ Halteres', alvo: '4×12 · 4 kg' },
+        { n: '7', nome: 'Tríceps Francês Halter', alvo: '4×10 · 6 kg' },
+        { n: '8', nome: 'Abdominal Infra Solo', alvo: '4×12 · peso corporal' }
+      ],
+      abrirItem: () => this.setState({ sheetItem: true }), fecharItem: () => this.setState({ sheetItem: false }),
+      sheetItem: st.sheetItem,
+      abrirRestaurar: () => this.setState({ sheetRestaurar: true }), fecharRestaurar: () => this.setState({ sheetRestaurar: false }),
+      sheetRestaurar: st.sheetRestaurar
+    };
+  }
+}
+</script>
+</body>
+</html>

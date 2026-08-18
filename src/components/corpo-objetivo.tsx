@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Aviso, Barra, Botao, CampoNumero, Cartao, Numero } from '@/components/progresso-base';
-import { cores, fonte } from '@/constants/tema';
+import { cores, tamanho as fonte } from '@/constants/tema';
 import { definirObjetivoPeso, limparObjetivoPeso } from '@/db/mutations';
 import type { Perfil } from '@/db/schema';
 import { formatarPeso, parseKg } from '@/dominio/carga';

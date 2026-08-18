@@ -1,23 +1,31 @@
+import { useFonts } from 'expo-font';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import migrations from '@/../drizzle/migrations';
-import { cores, espaco, fonte } from '@/constants/tema';
+import { FONTES } from '@/constants/fontes';
+import { cor, espaco, margem, raio, tipo } from '@/constants/tema';
 import { db } from '@/db/client';
 import { aplicarSeed } from '@/db/seed';
 
 /**
- * Segura a UI até o banco estar utilizável.
+ * Segura a UI até o app estar utilizável: banco migrado, seed aplicado e fontes
+ * carregadas.
  *
  * Renderizar uma tela que consulta tabela ainda não migrada é crash na primeira
  * execução — e como não há servidor, o banco do aparelho é o único exemplar dos
  * treinos. Por isso a falha aqui não pode virar tela branca: se a migration
  * quebrar, é preciso ver o que aconteceu e ter uma saída, não um app que
  * simplesmente não abre com o histórico preso dentro.
+ *
+ * As fontes entram no mesmo portão porque o desenho depende delas: sem
+ * Caprasimo, o número de 84 px cai na fonte do sistema e a tela de execução
+ * aparece por um instante com outra cara.
  */
 export function ProvedorBanco({ children }: { children: React.ReactNode }) {
   const { success, error } = useMigrations(db, migrations);
+  const [fontesProntas] = useFonts(FONTES);
   const [pronto, setPronto] = useState(false);
 
   /**
@@ -43,10 +51,10 @@ export function ProvedorBanco({ children }: { children: React.ReactNode }) {
 
   if (error) return <TelaErro erro={error} />;
 
-  if (!success || !pronto) {
+  if (!success || !pronto || !fontesProntas) {
     return (
       <View style={estilos.centro}>
-        <ActivityIndicator color={cores.destaque} />
+        <ActivityIndicator color={cor.acao} />
         <Text style={estilos.carregando}>Preparando seus dados…</Text>
       </View>
     );
@@ -81,19 +89,26 @@ const estilos = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: cores.fundo,
-    gap: espaco.lg,
+    backgroundColor: cor.fundo,
+    gap: espaco.seis,
   },
-  carregando: { color: cores.textoFraco, fontSize: fonte.corpo },
+  // Sem `fontFamily`: esta é a única tela que pode aparecer ANTES de as fontes
+  // carregarem, e pedir Caprasimo aqui daria texto invisível no pior momento.
+  carregando: { fontSize: 14, color: cor.textoTerciario },
   erroArea: {
     flexGrow: 1,
     justifyContent: 'center',
-    backgroundColor: cores.fundo,
-    padding: espaco.lg,
-    gap: espaco.md,
+    backgroundColor: cor.fundo,
+    padding: margem.conteudo,
+    gap: espaco.quatro,
   },
-  erroTitulo: { color: cores.texto, fontSize: fonte.titulo, fontWeight: '600' },
-  erroTexto: { color: cores.textoFraco, fontSize: fonte.corpo, lineHeight: 22 },
-  erroCaixa: { borderWidth: 1, borderColor: cores.alerta, padding: espaco.md },
-  erroDetalhe: { color: cores.alerta, fontSize: 12, fontFamily: 'monospace' },
+  erroTitulo: { fontSize: 22, fontWeight: '700', color: cor.texto },
+  erroTexto: { fontSize: 14, lineHeight: 22, color: cor.textoSecundario },
+  erroCaixa: {
+    borderWidth: 2,
+    borderColor: cor.acaoContorno,
+    borderRadius: raio.container,
+    padding: espaco.quatro,
+  },
+  erroDetalhe: { ...tipo.meta, fontFamily: 'monospace', color: cor.acaoTexto },
 });

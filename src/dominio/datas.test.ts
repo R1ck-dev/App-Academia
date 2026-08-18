@@ -10,7 +10,10 @@ import {
   formatarDuracao,
   formatarHora,
   formatarRelogio,
+  diasEntreDias,
   mediaMovel,
+  rotuloDeQuandoFoi,
+  rotuloDoDiaLongo,
   type Ponto,
 } from './datas.ts';
 
@@ -188,5 +191,48 @@ describe('formatarRelogio', () => {
     // O caso real: ele voltou ao app 3 minutos depois com a tela apagada.
     assert.equal(formatarRelogio(-180_000), '0:00');
     assert.equal(formatarRelogio(0), '0:00');
+  });
+});
+
+describe('rotuloDoDiaLongo', () => {
+  it('escreve o dia da semana e o mês por extenso, em português', () => {
+    // 17/08/2026 é uma segunda-feira.
+    assert.equal(rotuloDoDiaLongo(new Date(2026, 7, 17, 18, 41).getTime()), 'Segunda · 17 de agosto');
+    assert.equal(rotuloDoDiaLongo(new Date(2026, 0, 1, 8, 0).getTime()), 'Quinta · 1 de janeiro');
+    assert.equal(rotuloDoDiaLongo(new Date(2026, 2, 8, 8, 0).getTime()), 'Domingo · 8 de março');
+  });
+
+  it('não depende de Intl — o Hermes em release não traz os dados de locale', () => {
+    const texto = rotuloDoDiaLongo(new Date(2026, 11, 25, 12, 0).getTime());
+    assert.equal(texto, 'Sexta · 25 de dezembro');
+  });
+});
+
+describe('diasEntreDias e rotuloDeQuandoFoi', () => {
+  const agora = new Date(2026, 7, 17, 8, 0).getTime();
+
+  it('conta a distância entre DATAS, não entre relógios', () => {
+    // 22h de ontem para 8h de hoje: dez horas, e um dia de distância.
+    assert.equal(diasEntreDias(new Date(2026, 7, 16, 22, 0).getTime(), agora), 1);
+    assert.equal(diasEntreDias(new Date(2026, 7, 17, 1, 0).getTime(), agora), 0);
+    assert.equal(diasEntreDias(new Date(2026, 7, 10, 19, 0).getTime(), agora), 7);
+  });
+
+  it('atravessa a virada do mês', () => {
+    assert.equal(diasEntreDias(new Date(2026, 6, 31, 19, 0).getTime(), agora), 17);
+  });
+
+  it('escreve hoje, ontem e há N dias', () => {
+    assert.equal(rotuloDeQuandoFoi(new Date(2026, 7, 17, 1, 0).getTime(), agora), 'hoje');
+    assert.equal(rotuloDeQuandoFoi(new Date(2026, 7, 16, 22, 0).getTime(), agora), 'ontem');
+    assert.equal(rotuloDeQuandoFoi(new Date(2026, 7, 10, 19, 0).getTime(), agora), 'há 7 dias');
+  });
+
+  it('treino nunca feito é "nunca", não "há NaN dias"', () => {
+    assert.equal(rotuloDeQuandoFoi(null, agora), 'nunca');
+  });
+
+  it('instante no futuro vira "hoje" — relógio do aparelho mexido não vira "há −2 dias"', () => {
+    assert.equal(rotuloDeQuandoFoi(new Date(2026, 7, 19, 8, 0).getTime(), agora), 'hoje');
   });
 });

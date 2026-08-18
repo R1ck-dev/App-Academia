@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Aviso, Barras, CampoNumero, Cartao, Chip, Estatistica } from '@/components/progresso-base';
-import { espaco } from '@/constants/tema';
+import { espacoLegado as espaco } from '@/constants/tema';
 import { registrarMedida } from '@/db/mutations';
 import { PARTES_CORPO, type Medida, type ParteCorpo } from '@/db/schema';
 import { formatarMedida } from '@/dominio/carga';

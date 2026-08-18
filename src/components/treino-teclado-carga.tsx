@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { ALVO_TOQUE, cores, espaco, fonte } from '@/constants/tema';
+import { alvo, cor, espaco, margem, raio, tipo } from '@/constants/tema';
 import { formatarNumeroDaCarga, parseCarga, type Carga, type Unidade } from '@/dominio/carga';
 
 export function TecladoDeCarga({
@@ -60,7 +60,7 @@ export function TecladoDeCarga({
             autoFocus
             selectTextOnFocus
             placeholder={unidade === 'kg' ? '42,5' : '5'}
-            placeholderTextColor={cores.textoFraco}
+            placeholderTextColor={cor.textoDesligado}
             onSubmitEditing={confirmar}
           />
           {erro === null ? null : <Text style={estilos.erro}>{erro}</Text>}
@@ -81,37 +81,37 @@ export function TecladoDeCarga({
 const estilos = StyleSheet.create({
   fundo: {
     flex: 1,
-    backgroundColor: '#000000AA',
+    backgroundColor: 'rgba(46,43,37,0.42)',
     justifyContent: 'center',
-    padding: espaco.lg,
+    padding: margem.conteudo,
   },
   caixa: {
-    backgroundColor: cores.superficie,
-    borderRadius: 16,
-    padding: espaco.lg,
-    gap: espaco.md,
+    backgroundColor: cor.superficieElevada,
+    borderRadius: raio.folha,
+    padding: espaco.seis,
+    gap: espaco.quatro,
   },
-  titulo: { color: cores.texto, fontSize: fonte.corpo, fontWeight: '600' },
+  titulo: { ...tipo.itemForte, color: cor.texto },
   entrada: {
-    color: cores.texto,
-    fontSize: fonte.numero,
-    backgroundColor: cores.superficieAlta,
-    borderRadius: 12,
-    paddingHorizontal: espaco.md,
-    paddingVertical: espaco.sm,
+    ...tipo.numeroMedio,
+    color: cor.texto,
+    backgroundColor: cor.superficie,
+    borderRadius: raio.container,
+    paddingHorizontal: espaco.quatro,
+    paddingVertical: espaco.tres,
     textAlign: 'center',
   },
-  erro: { color: cores.alerta, fontSize: fonte.legenda },
-  botoes: { flexDirection: 'row', gap: espaco.sm },
+  erro: { ...tipo.corpoMenor, color: cor.acaoTexto },
+  botoes: { flexDirection: 'row', gap: espaco.dois },
   botao: {
     flex: 1,
-    minHeight: ALVO_TOQUE,
+    minHeight: alvo.botaoSecundario,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: raio.pilula,
   },
-  secundario: { backgroundColor: cores.superficieAlta },
-  primario: { backgroundColor: cores.destaque },
-  botaoTexto: { color: cores.texto, fontSize: fonte.corpo, fontWeight: '600' },
-  botaoTextoPrimario: { color: cores.fundo },
+  secundario: { borderWidth: 2, borderColor: cor.borda },
+  primario: { backgroundColor: cor.acao },
+  botaoTexto: { ...tipo.rotuloForte, color: cor.texto },
+  botaoTextoPrimario: { color: cor.sobreAcao },
 });

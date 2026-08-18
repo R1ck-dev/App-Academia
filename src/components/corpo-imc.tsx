@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Aviso, Botao, CampoNumero, Cartao, Numero } from '@/components/progresso-base';
-import { cores, espaco, fonte } from '@/constants/tema';
+import { cores, espacoLegado as espaco, tamanho as fonte } from '@/constants/tema';
 import { salvarAltura } from '@/db/mutations';
 import type { Perfil } from '@/db/schema';
 import { formatarPeso } from '@/dominio/carga';

@@ -13,15 +13,18 @@
 
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Tela, Vazio } from '@/components/tela';
-import { useSeriesDaSessao, useSessaoEmAndamento, useTreinos } from '@/components/treino-dados';
+import { useConsulta } from '@/components/progresso-consulta';
 import { ResumoDaSessao } from '@/components/treino-resumo';
 import { TelaSessao } from '@/components/treino-sessao';
-import { ALVO_TOQUE, cores, espaco, fonte } from '@/constants/tema';
+import { useSeriesDaSessao, useSessaoEmAndamento } from '@/components/treino-dados';
+import { letraDoTreino } from '@/components/treino-texto';
+import { alvo, cor, espaco, margem, raio, tipo } from '@/constants/tema';
 import { finalizarSessao, iniciarSessao } from '@/db/mutations';
-import type { Sessao, Treino } from '@/db/schema';
-import { diaLocal, formatarDataHora, formatarHora } from '@/dominio/datas';
+import { resumoDosTreinos, type ResumoDeTreino } from '@/db/queries';
+import type { Sessao } from '@/db/schema';
+import { diaLocal, formatarHora, rotuloDeQuandoFoi, rotuloDoDiaLongo } from '@/dominio/datas';
 
 export default function TreinoDeHoje() {
   const sessao = useSessaoEmAndamento();
@@ -45,54 +48,100 @@ export default function TreinoDeHoje() {
         />
       );
     }
-    return (
-      <SessaoEsquecida
-        sessao={sessao}
-        aoRetomar={() => setRetomada(sessao.id)}
-        aoFinalizar={(id) => setResumoDe(id)}
-      />
-    );
   }
 
-  return <EscolhaDoTreino />;
+  return (
+    <Abertura
+      esquecida={sessao}
+      aoRetomar={() => sessao !== undefined && setRetomada(sessao.id)}
+      aoFinalizar={(id) => setResumoDe(id)}
+    />
+  );
 }
 
-function EscolhaDoTreino() {
-  const fichas = useTreinos();
+/**
+ * "Bora treinar": os três cartões, e — quando existe — a sessão de ontem que
+ * ficou aberta, resolvida ANTES da escolha do dia. Ela vem depois dos cartões
+ * na tela porque começar um treino novo é o caso comum; ela vem antes na cabeça
+ * dele porque é a pendência.
+ */
+function Abertura({
+  esquecida,
+  aoRetomar,
+  aoFinalizar,
+}: {
+  esquecida: Sessao | undefined;
+  aoRetomar: () => void;
+  aoFinalizar: (sessaoId: string) => void;
+}) {
+  const fichas = useConsulta('Abertura', resumoDosTreinos);
+  const agora = Date.now();
 
-  function iniciar(ficha: Treino) {
+  function iniciar(ficha: ResumoDeTreino) {
     // O nome é COPIADO para a sessão pela mutation: renomear a ficha depois não
     // pode reescrever o histórico.
     const r = iniciarSessao({ nome: ficha.nome, treinoId: ficha.id });
     if (!r.ok) {
-      Alert.alert('Já existe um treino em andamento', 'Volte para esta aba para retomá-lo.');
+      Alert.alert('Já existe um treino em andamento', 'Resolva a sessão aberta antes de começar.');
     }
   }
 
-  if (fichas.length === 0) {
-    return (
-      <Tela titulo="Treino">
-        <Vazio
-          mensagem="Nenhum treino montado ainda."
-          acao="Monte o Treino A para começar a registrar cargas."
-        />
-      </Tela>
-    );
-  }
-
   return (
-    <Tela titulo="Treino">
-      <ScrollView style={estilos.rolagem} contentContainerStyle={estilos.lista}>
-        {fichas.map((ficha) => (
-          <Pressable key={ficha.id} style={estilos.ficha} onPress={() => iniciar(ficha)}>
-            <Text style={estilos.fichaNome}>{ficha.nome}</Text>
-            {ficha.descricao === null ? null : (
-              <Text style={estilos.fichaDescricao}>{ficha.descricao}</Text>
-            )}
-          </Pressable>
-        ))}
+    <SafeAreaView style={estilos.area} edges={['top', 'left', 'right']}>
+      <View style={estilos.cabecalho}>
+        <Text style={estilos.kicker}>{rotuloDoDiaLongo(agora)}</Text>
+        <Text style={estilos.titulo}>Bora treinar</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={estilos.rolagem}>
+        {fichas.length === 0 ? (
+          <View style={estilos.vazio}>
+            <Text style={estilos.vazioTexto}>Nenhum treino montado ainda.</Text>
+          </View>
+        ) : (
+          <View style={estilos.lista}>
+            {fichas.map((ficha) => (
+              <CartaoDoTreino
+                key={ficha.id}
+                ficha={ficha}
+                agora={agora}
+                aoTocar={() => iniciar(ficha)}
+              />
+            ))}
+          </View>
+        )}
+
+        {esquecida === undefined ? null : (
+          <SessaoEsquecida sessao={esquecida} aoRetomar={aoRetomar} aoFinalizar={aoFinalizar} />
+        )}
       </ScrollView>
-    </Tela>
+    </SafeAreaView>
+  );
+}
+
+function CartaoDoTreino({
+  ficha,
+  agora,
+  aoTocar,
+}: {
+  ficha: ResumoDeTreino;
+  agora: number;
+  aoTocar: () => void;
+}) {
+  const exercicios = `${ficha.exercicios} ${ficha.exercicios === 1 ? 'exercício' : 'exercícios'}`;
+  return (
+    <Pressable style={({ pressed }) => [estilos.cartao, pressed && estilos.cartaoTocado]} onPress={aoTocar}>
+      <View style={estilos.letra}>
+        <Text style={estilos.letraTexto}>{letraDoTreino(ficha.nome)}</Text>
+      </View>
+      <View style={estilos.cartaoCorpo}>
+        {/* A descrição é o título: "Costas, bíceps e ombros" diz mais que "Treino A",
+            e a letra no círculo já identifica qual é. */}
+        <Text style={estilos.cartaoNome}>{ficha.descricao ?? ficha.nome}</Text>
+        <Text style={estilos.cartaoConta}>{exercicios}</Text>
+      </View>
+      <Text style={estilos.cartaoQuando}>{rotuloDeQuandoFoi(ficha.ultimaSessaoEm, agora)}</Text>
+    </Pressable>
   );
 }
 
@@ -122,59 +171,96 @@ function SessaoEsquecida({
   }
 
   return (
-    <Tela titulo="Treino">
-      <View style={estilos.aviso}>
-        <Text style={estilos.avisoTitulo}>{sessao.nome} continua aberto</Text>
-        <Text style={estilos.avisoTexto}>
-          Começou em {formatarDataHora(sessao.iniciadaEm)}, com {feitas.length}{' '}
-          {feitas.length === 1 ? 'série registrada' : 'séries registradas'}.
-        </Text>
+    <View style={estilos.aviso}>
+      <Text style={estilos.avisoTitulo}>Sessão de outro dia ficou aberta</Text>
+      <Text style={estilos.avisoTexto}>
+        {sessao.nome} · {feitas.length} {feitas.length === 1 ? 'série' : 'séries'} · última às{' '}
+        {formatarHora(ultimoInstante)}
+      </Text>
+      <View style={estilos.avisoBotoes}>
+        <Pressable
+          style={({ pressed }) => [estilos.infoCheio, pressed && estilos.infoCheioTocado]}
+          onPress={aoRetomar}
+        >
+          <Text style={estilos.infoCheioTexto}>Continuar nela</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [estilos.infoContorno, pressed && estilos.infoContornoTocado]}
+          onPress={finalizar}
+        >
+          <Text style={estilos.infoContornoTexto}>Fechar às {formatarHora(ultimoInstante)}</Text>
+        </Pressable>
       </View>
-
-      <Pressable style={estilos.principal} onPress={aoRetomar}>
-        <Text style={estilos.principalTexto}>Continuar este treino</Text>
-      </Pressable>
-
-      <Pressable style={estilos.secundario} onPress={finalizar}>
-        <Text style={estilos.secundarioTexto}>
-          Finalizar às {formatarHora(ultimoInstante)} (última série)
-        </Text>
-      </Pressable>
-    </Tela>
+    </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  rolagem: { flex: 1 },
-  lista: { gap: espaco.md, paddingBottom: espaco.xl },
-  ficha: {
-    backgroundColor: cores.superficie,
-    borderRadius: 14,
-    padding: espaco.md,
-    minHeight: ALVO_TOQUE + 24,
-    justifyContent: 'center',
-    gap: espaco.xs,
+  area: { flex: 1, backgroundColor: cor.fundo },
+  cabecalho: { paddingHorizontal: margem.conteudo, paddingTop: espaco.quatro, gap: espaco.dois },
+  kicker: { ...tipo.kicker, color: cor.infoKicker },
+  titulo: { ...tipo.tituloDeTelaGrande, color: cor.texto },
+  rolagem: { paddingTop: espaco.seis, paddingBottom: espaco.oito },
+  lista: { paddingHorizontal: margem.listaDeCartoes, gap: espaco.tres },
+
+  cartao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espaco.quatro,
+    padding: espaco.quatro,
+    borderRadius: raio.container,
+    backgroundColor: cor.superficie,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  fichaNome: { color: cores.texto, fontSize: fonte.titulo, fontWeight: '700' },
-  fichaDescricao: { color: cores.textoFraco, fontSize: fonte.legenda },
-  aviso: { backgroundColor: cores.superficie, borderRadius: 14, padding: espaco.md, gap: espaco.xs },
-  avisoTitulo: { color: cores.texto, fontSize: fonte.corpo, fontWeight: '700' },
-  avisoTexto: { color: cores.textoFraco, fontSize: fonte.legenda, lineHeight: 20 },
-  principal: {
-    minHeight: ALVO_TOQUE + 16,
-    borderRadius: 14,
-    backgroundColor: cores.destaque,
+  cartaoTocado: { borderColor: cor.acao, backgroundColor: cor.acaoTinta },
+  letra: {
+    width: 58,
+    height: 58,
+    borderRadius: raio.pilula,
+    backgroundColor: cor.textoDesligado,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  principalTexto: { color: cores.fundo, fontSize: fonte.corpo, fontWeight: '700' },
-  secundario: {
-    minHeight: ALVO_TOQUE,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: cores.borda,
+  letraTexto: { fontFamily: tipo.numeroMedio.fontFamily, fontSize: 26, color: cor.sobreAcao },
+  cartaoCorpo: { flex: 1, minWidth: 0, gap: 3 },
+  cartaoNome: { ...tipo.itemForte, color: cor.texto },
+  cartaoConta: { ...tipo.meta, fontSize: 12.5, color: cor.textoSecundario },
+  cartaoQuando: { ...tipo.metaMenor, color: cor.textoTerciario },
+
+  aviso: {
+    marginTop: espaco.seis,
+    marginHorizontal: margem.conteudo,
+    padding: espaco.quatro,
+    borderRadius: raio.container,
+    backgroundColor: cor.infoTinta,
+    gap: espaco.um,
+  },
+  avisoTitulo: { ...tipo.rotuloForte, color: cor.texto },
+  avisoTexto: { ...tipo.meta, fontSize: 12.5, color: cor.infoTintaTexto },
+  avisoBotoes: { flexDirection: 'row', gap: espaco.dois, marginTop: espaco.dois },
+  infoCheio: {
+    height: alvo.botaoCompacto,
+    paddingHorizontal: espaco.quatro,
+    borderRadius: raio.pilula,
+    backgroundColor: cor.info,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secundarioTexto: { color: cores.textoFraco, fontSize: fonte.corpo },
+  infoCheioTocado: { backgroundColor: cor.infoPressionada },
+  infoCheioTexto: { ...tipo.corpoMenor, fontSize: 13.5, color: cor.sobreAcao },
+  infoContorno: {
+    height: alvo.botaoCompacto,
+    paddingHorizontal: espaco.quatro,
+    borderRadius: raio.pilula,
+    borderWidth: 2,
+    borderColor: cor.infoBorda,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoContornoTocado: { backgroundColor: cor.infoTinta },
+  infoContornoTexto: { ...tipo.corpoMenor, fontSize: 13.5, color: cor.infoTintaTextoForte },
+
+  vazio: { paddingHorizontal: margem.conteudo, paddingTop: espaco.seis },
+  vazioTexto: { ...tipo.corpo, color: cor.textoSecundario },
 });

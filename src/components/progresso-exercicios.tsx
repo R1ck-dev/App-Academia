@@ -14,7 +14,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Aviso, Barras, Botao, Cartao, Estatistica, ItemLista } from '@/components/progresso-base';
-import { cores, espaco, fonte } from '@/constants/tema';
+import { cores, espacoLegado as espaco, tamanho as fonte } from '@/constants/tema';
 import type { TipoMedicao } from '@/db/schema';
 import { formatarCarga, formatarCargaAproximada } from '@/dominio/carga';
 import { formatarData, formatarDuracao } from '@/dominio/datas';

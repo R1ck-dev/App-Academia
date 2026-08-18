@@ -109,6 +109,63 @@ export function listarTreinos(): Treino[] {
 }
 
 /**
+ * O que o cartão de cada treino mostra na abertura do app: quantos exercícios a
+ * ficha tem e quando ele fez aquilo pela última vez.
+ *
+ * Três consultas em vez de um join com `group by`: contar itens e achar a
+ * sessão mais recente são agregações sobre tabelas diferentes, e juntá-las num
+ * `left join` só multiplica as linhas para depois dividir. São três selects
+ * locais e síncronos — microssegundos.
+ *
+ * `ultimaSessaoEm` olha o INÍCIO da sessão, inclusive a que ainda está aberta:
+ * a pergunta do cartão é "quando foi a última vez que treinei isto", e uma
+ * sessão em andamento já responde.
+ */
+export type ResumoDeTreino = {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  exercicios: number;
+  ultimaSessaoEm: number | null;
+};
+
+export function resumoDosTreinos(): ResumoDeTreino[] {
+  const fichas = listarTreinos();
+
+  const contagens = db
+    .select({
+      treinoId: treinoExercicios.treinoId,
+      total: sql<number>`count(*)`,
+    })
+    .from(treinoExercicios)
+    .innerJoin(exercicios, eq(exercicios.id, treinoExercicios.exercicioId))
+    .where(and(isNull(treinoExercicios.arquivadoEm), isNull(exercicios.arquivadoEm)))
+    .groupBy(treinoExercicios.treinoId)
+    .all();
+
+  const ultimas = db
+    .select({
+      treinoId: sessoes.treinoId,
+      quando: sql<number | null>`max(${sessoes.iniciadaEm})`,
+    })
+    .from(sessoes)
+    .where(and(isNull(sessoes.arquivadoEm), isNotNull(sessoes.treinoId)))
+    .groupBy(sessoes.treinoId)
+    .all();
+
+  const porTreino = new Map(contagens.map((c) => [c.treinoId, c.total]));
+  const quandoPorTreino = new Map(ultimas.map((u) => [u.treinoId, u.quando]));
+
+  return fichas.map((ficha) => ({
+    id: ficha.id,
+    nome: ficha.nome,
+    descricao: ficha.descricao,
+    exercicios: porTreino.get(ficha.id) ?? 0,
+    ultimaSessaoEm: quandoPorTreino.get(ficha.id) ?? null,
+  }));
+}
+
+/**
  * A ficha pronta para executar: item + exercício, na ordem da ficha.
  *
  * Filtra exercício arquivado junto com item arquivado — o item existe para ser

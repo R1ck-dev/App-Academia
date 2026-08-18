@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/industry-e811f2ad-5b3c-4e5b-9753-7720c7457b91/styles.css">
+<script src="_ds/industry-e811f2ad-5b3c-4e5b-9753-7720c7457b91/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#f2f2f3;background-image:linear-gradient(rgba(29,31,32,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(29,31,32,.055) 1px,transparent 1px);background-size:34px 34px;font-family:"Barlow",system-ui,sans-serif}
+a{color:#416180}a:hover{color:#2c455d}
+.dv-turn{padding:44px 48px 36px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1d1f20;color:#f2f2f3;text-decoration:none}
+.dv-tname{font:600 14px/1.2 "Barlow Condensed",sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#1d1f20}
+.dv-lede{max-width:640px;margin:0 0 26px;font:400 13.5px/1.6 "Barlow",sans-serif;color:rgba(29,31,32,.62)}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px;max-width:412px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(29,31,32,.1);color:#1d1f20;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 12px/1.3 "Barlow Condensed",sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#1d1f20}
+.dv-onote{margin:0;font:400 12px/1.5 "Barlow",sans-serif;color:rgba(29,31,32,.6);max-width:390px}
+.dv-opt:target .dv-oid{background:#5980a6;color:#f2f2f3}
+.dv-next{margin:30px 0 0;font:400 12.5px/1.6 "Barlow",sans-serif;color:rgba(29,31,32,.55)}
+.bez{padding:9px;background:#0c0d0e;border-radius:30px;box-shadow:0 14px 40px rgba(29,31,32,.24)}
+.scr{width:390px;height:844px;overflow:hidden;position:relative;display:flex;flex-direction:column;border-radius:22px}
+@keyframes voa{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(-8px,216px) scale(.2);opacity:0}}
+@keyframes pisca{0%,100%{opacity:.35}50%{opacity:1}}
+</style></helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">App de academia — proposta e alternativas</span></div>
+<p class="dv-lede">A proposta é <a class="dv-oid" href="#1a">1a</a>: navegável, tema escuro, as oito telas. As outras sete são os eixos que você pediu — o mecanismo de registro (<a class="dv-oid" href="#1b">1b</a>, <a class="dv-oid" href="#1c">1c</a>), a hierarquia da execução (<a class="dv-oid" href="#1d">1d</a>), a tela de abrir (<a class="dv-oid" href="#1e">1e</a>, <a class="dv-oid" href="#1f">1f</a>), a navegação (<a class="dv-oid" href="#1g">1g</a>) e a mesma execução sob o sol (<a class="dv-oid" href="#1h">1h</a>).</p>
+
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Protótipo navegável — proposta</div>
+<div class="bez"><div class="scr" style="--color-bg:#191b1d;--color-surface:#232629;--color-text:#f1f1f2;--color-divider:rgba(241,241,242,.16);--color-accent:#94bce3;--color-accent-100:#2c455d;--color-accent-800:#cfe3f6;--color-neutral-100:#2b2b2d;--color-neutral-800:#e7e7ea;background:#191b1d;color:#f1f1f2">
+
+<div style="display:flex;justify-content:space-between;align-items:center;height:30px;padding:0 18px;font-size:11px;color:rgba(241,241,242,.45);flex:none"><span>{{ relogio }}</span><span>4G · 62%</span></div>
+
+<sc-if value="{{ telaHoje }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <div style="padding:14px 20px 0">
+    <div style="font:600 11px/1 'Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#94bce3">{{ diaDaSemana }}</div>
+    <h2 style="font-family:var(--font-heading);font-size:34px;margin:6px 0 0;letter-spacing:-.01em">Treinar</h2>
+  </div>
+
+  <sc-if value="{{ hojeAberta }}" hint-placeholder-val="{{ false }}">
+  <div style="margin:18px 20px 0;padding:16px" class="blueprint"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div style="font:600 10px/1 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#94bce3;margin-bottom:8px">Em andamento</div>
+    <div style="font-family:var(--font-heading);font-size:25px;line-height:1.05">{{ abertaNome }}</div>
+    <div style="font-size:12.5px;color:rgba(241,241,242,.55);margin-top:4px">{{ abertaMeta }}</div>
+    <button class="btn btn-primary" onClick="{{ retomar }}" style="width:100%;height:56px;margin-top:14px;font-size:19px;letter-spacing:.06em">RETOMAR</button>
+    <div style="font-size:11.5px;color:rgba(241,241,242,.4);margin-top:10px">Na prática o app já abriria aqui dentro: retomar custa zero toque.</div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ hojeOntem }}" hint-placeholder-val="{{ false }}">
+  <div style="margin:18px 20px 0;padding:16px" class="blueprint"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div style="font:600 10px/1 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#94bce3;margin-bottom:8px">Ficou aberta de ontem</div>
+    <div style="font-family:var(--font-heading);font-size:25px;line-height:1.05">Treino B — Pernas</div>
+    <div style="font-size:12.5px;color:rgba(241,241,242,.55);margin-top:4px">18 séries registradas · última às 19:34 de ontem</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      <button class="btn btn-secondary" onClick="{{ retomar }}" style="height:50px;font-size:16px">Continuar dentro dela</button>
+      <button class="btn btn-secondary" onClick="{{ fecharOntem }}" style="height:50px;font-size:16px">Fechar às 19:34 e começar hoje</button>
+    </div>
+    <div style="font-size:11.5px;color:rgba(241,241,242,.4);margin-top:10px">Fechar usa o horário da última série. O app não inventa um término que ninguém viu.</div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ hojeLimpa }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;gap:12px;padding:18px 20px 0">
+    <sc-for list="{{ treinos }}" as="t" hint-placeholder-count="3">
+      <button onClick="{{ t.tocar }}" class="blueprint" style="display:block;width:100%;text-align:left;padding:16px 18px;background:transparent;color:inherit;cursor:pointer;font-family:inherit"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+          <div style="font-family:var(--font-heading);font-size:27px;line-height:1">{{ t.letra }}</div>
+          <div style="font-size:11px;color:rgba(241,241,242,.42)">{{ t.quando }}</div>
+        </div>
+        <div style="font-size:14px;color:rgba(241,241,242,.72);margin-top:6px">{{ t.grupos }}</div>
+        <div style="font-size:11.5px;color:rgba(241,241,242,.42);margin-top:2px">{{ t.conta }}</div>
+      </button>
+    </sc-for>
+  </div>
+  <div style="margin-top:auto;padding:0 20px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+    <div style="font-size:11.5px;color:rgba(241,241,242,.45)">Último backup há 47 dias</div>
+    <button class="btn btn-ghost" onClick="{{ irBackup }}" style="font-size:13px">Exportar</button>
+  </div>
+  </sc-if>
+
+  <div style="margin:0 20px 10px;padding-top:10px;border-top:1px dashed rgba(241,241,242,.14);display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+    <span style="font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:rgba(241,241,242,.3)">demo</span>
+    <button class="btn" onClick="{{ estadoLimpa }}" style="font-size:11px;padding:4px 8px;border-color:{{ corEstado1 }};color:{{ corEstado1 }}">sem sessão</button>
+    <button class="btn" onClick="{{ estadoHoje }}" style="font-size:11px;padding:4px 8px;border-color:{{ corEstado2 }};color:{{ corEstado2 }}">sessão de hoje</button>
+    <button class="btn" onClick="{{ estadoOntem }}" style="font-size:11px;padding:4px 8px;border-color:{{ corEstado3 }};color:{{ corEstado3 }}">sessão de ontem</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ telaExec }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 16px 0">
+    <div>
+      <div style="font-family:var(--font-heading);font-size:19px;line-height:1.1">{{ sessaoNome }}</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:rgba(241,241,242,.4);margin-top:1px"><span style="width:5px;height:5px;background:#94bce3;animation:pisca 2.4s infinite"></span>tela acordada · {{ contagem }}</div>
+    </div>
+    <button class="btn btn-secondary" onClick="{{ pedirFinalizar }}" style="font-size:12px;height:34px">FINALIZAR</button>
+  </div>
+
+  <div style="display:flex;gap:3px;padding:12px 16px 0">
+    <sc-for list="{{ trilha }}" as="p" hint-placeholder-count="9">
+      <div style="flex:1;height:4px;background:{{ p.cor }}"></div>
+    </sc-for>
+  </div>
+
+  <div style="padding:22px 16px 0">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+      <h3 style="font-family:var(--font-heading);font-size:29px;line-height:1.02;margin:0;max-width:250px;text-wrap:pretty">{{ atualNome }}</h3>
+      <div style="font:600 12px 'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#94bce3;text-align:right;flex:none">{{ atualPosicao }}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:7px;font-size:12px;color:rgba(241,241,242,.5)">
+      <span>{{ atualProcedencia }}</span>
+      <span>{{ atualDescanso }}</span>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:14px;padding:14px 16px 0;flex-direction:{{ direcao }}">
+    <button class="btn btn-secondary" onClick="{{ menos }}" style="width:66px;height:66px;font-size:30px;flex:none">−</button>
+    <button onClick="{{ abrirTeclado }}" style="flex:1;background:transparent;border:0;padding:0;cursor:pointer;color:inherit;text-align:{{ alinhamento }}">
+      <div style="font-family:var(--font-heading);font-size:88px;line-height:.86;letter-spacing:-.02em">{{ atualNumero }}</div>
+      <div style="font-size:15px;color:rgba(241,241,242,.6);margin-top:2px">{{ atualUnidade }}</div>
+    </button>
+    <button class="btn btn-secondary" onClick="{{ mais }}" style="width:66px;height:66px;font-size:30px;flex:none">+</button>
+  </div>
+  <div style="padding:2px 16px 0;font-size:11.5px;color:rgba(241,241,242,.38)">{{ atualAprox }}</div>
+
+  <sc-if value="{{ temReps }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 16px 0;padding:10px 14px;border-top:1px solid rgba(241,241,242,.16);border-bottom:1px solid rgba(241,241,242,.16)">
+    <div style="font-size:13px;color:rgba(241,241,242,.6)">repetições <span style="color:#f1f1f2;font-family:var(--font-heading);font-size:22px;margin-left:8px">{{ atualReps }}</span> <span style="font-size:11px">{{ atualRepsAlvo }}</span></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" onClick="{{ menosReps }}" style="width:46px;height:40px;font-size:20px">−</button>
+      <button class="btn btn-secondary" onClick="{{ maisReps }}" style="width:46px;height:40px;font-size:20px">+</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <div style="padding:16px 16px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:38px">
+    <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+      <span class="tag" style="background:{{ c.fundo }};color:{{ c.cor }};border:1px solid {{ c.borda }};font-size:11.5px;padding:4px 9px">{{ c.texto }}</span>
+    </sc-for>
+    <sc-if value="{{ podeDesfazer }}" hint-placeholder-val="{{ true }}">
+      <button class="btn btn-ghost" onClick="{{ desfazer }}" style="font-size:12.5px">desfazer última</button>
+    </sc-if>
+  </div>
+
+  <div style="margin-top:auto;padding:0 16px 8px;font-size:11.5px;color:rgba(241,241,242,.38)">{{ aSeguir }}</div>
+  <div style="display:flex;gap:9px;padding:0 16px 22px;flex-direction:{{ direcao }}">
+    <button class="btn btn-secondary" onClick="{{ registrarAquec }}" style="width:96px;height:104px;flex:none;flex-direction:column;gap:3px;border-style:dashed">
+      <span style="font-size:15px;letter-spacing:.06em">AQUEC.</span>
+      <span style="font-size:10px;font-family:var(--font-body);opacity:.55;letter-spacing:0">não conta</span>
+    </button>
+    <button class="btn btn-primary blueprint" onClick="{{ registrar }}" style="flex:1;height:104px;flex-direction:column;gap:2px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span style="font-size:27px;letter-spacing:.05em">REGISTRAR</span>
+      <span style="font-size:12.5px;font-family:var(--font-body);letter-spacing:0;opacity:.8">{{ botaoResumo }}</span>
+    </button>
+  </div>
+</div>
+{{ voo }}
+</sc-if>
+
+<sc-if value="{{ telaResumo }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:10px 20px 0">
+  <div style="font:600 11px/1 'Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#94bce3">Treino B — Pernas · 1 h 04</div>
+  <h2 style="font-family:var(--font-heading);font-size:32px;margin:8px 0 0">Terminado</h2>
+
+  <div style="margin-top:20px">
+    <div style="font-family:var(--font-heading);font-size:44px;line-height:1">{{ volumeTexto }}</div>
+    <div style="font-size:12px;color:rgba(241,241,242,.5);margin-top:4px">volume somado · 12 séries · 800 kg·rep vieram de placa convertida</div>
+  </div>
+
+  <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(241,241,242,.16)">
+    <div style="font:600 10px 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(241,241,242,.45);margin-bottom:8px">Fora da soma</div>
+    <sc-for list="{{ foraDaSoma }}" as="f" hint-placeholder-count="4">
+      <div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0;color:rgba(241,241,242,.78)"><span>{{ f.nome }}</span><span style="color:rgba(241,241,242,.45);flex:none">{{ f.motivo }}</span></div>
+    </sc-for>
+  </div>
+
+  <div class="blueprint" style="margin-top:18px;padding:14px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div style="font:600 10px 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#94bce3">A ficha diverge</div>
+    <div style="font-size:14px;margin-top:8px;line-height:1.45">Cadeira Flexora — você fez <strong>6 placas</strong> nas 4 séries. A ficha diz <strong>5 placas</strong>.</div>
+    <sc-if value="{{ fichaOk }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:12.5px;color:#94bce3;margin-top:10px">Ficha atualizada para 6 placas.</div>
+    </sc-if>
+    <sc-if value="{{ fichaPendente }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-primary" onClick="{{ atualizarFicha }}" style="flex:1;height:44px;font-size:14px">Atualizar para 6</button>
+        <button class="btn btn-secondary" onClick="{{ manterFicha }}" style="flex:none;height:44px;font-size:14px">Manter 5</button>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="margin-top:16px;display:flex;align-items:baseline;gap:8px">
+    <span class="tag tag-accent" style="font-size:11px">RECORDE</span>
+    <span style="font-size:13.5px">Panturrilha · maior carga: 22,5 kg</span>
+  </div>
+
+  <button class="btn btn-secondary" onClick="{{ concluir }}" style="margin-top:auto;margin-bottom:24px;height:56px;font-size:17px">Concluir</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ telaHist }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <div style="padding:12px 20px 0">
+    <h2 style="font-family:var(--font-heading);font-size:32px;margin:0">Histórico</h2>
+    <div style="display:flex;margin-top:12px;border:1px solid rgba(241,241,242,.16)">
+      <button onClick="{{ abaSessoes }}" style="flex:1;height:40px;border:0;cursor:pointer;font:600 13px 'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase;background:{{ fundoAbaS }};color:{{ corAbaS }}">Sessões</button>
+      <button onClick="{{ abaExercicios }}" style="flex:1;height:40px;border:0;border-left:1px solid rgba(241,241,242,.16);cursor:pointer;font:600 13px 'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase;background:{{ fundoAbaE }};color:{{ corAbaE }}">Exercícios</button>
+    </div>
+  </div>
+
+  <sc-if value="{{ verSessoes }}" hint-placeholder-val="{{ true }}">
+  <div style="overflow:auto;padding:6px 20px 20px">
+    <sc-for list="{{ sessoes }}" as="s" hint-placeholder-count="6">
+      <div style="padding:13px 0;border-bottom:1px solid rgba(241,241,242,.1)">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+          <span style="font-family:var(--font-heading);font-size:19px">{{ s.nome }}</span>
+          <span style="font-size:11.5px;color:rgba(241,241,242,.45);flex:none">{{ s.data }}</span>
+        </div>
+        <div style="font-size:12.5px;color:rgba(241,241,242,.55);margin-top:2px">{{ s.meta }}</div>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ verLista }}" hint-placeholder-val="{{ false }}">
+  <div style="overflow:auto;padding:6px 20px 20px">
+    <sc-for list="{{ exLista }}" as="e" hint-placeholder-count="6">
+      <button onClick="{{ e.tocar }}" style="display:block;width:100%;text-align:left;padding:13px 0;background:transparent;border:0;border-bottom:1px solid rgba(241,241,242,.1);color:inherit;cursor:pointer;font-family:inherit">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+          <span style="font-size:15.5px">{{ e.nome }}</span>
+          <span style="font-size:11.5px;color:{{ e.corMeta }};flex:none">{{ e.meta }}</span>
+        </div>
+        <div style="font-size:11.5px;color:rgba(241,241,242,.42);margin-top:2px">{{ e.sub }}</div>
+      </button>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ verDetalhe }}" hint-placeholder-val="{{ false }}">
+  <div style="overflow:auto;padding:8px 20px 20px">
+    <button class="btn btn-ghost" onClick="{{ voltarLista }}" style="font-size:12.5px;padding-left:0">← exercícios</button>
+    <h3 style="font-family:var(--font-heading);font-size:25px;margin:6px 0 0;text-wrap:pretty">{{ detNome }}</h3>
+    <div style="font-size:12px;color:rgba(241,241,242,.5);margin-top:2px">{{ detSub }}</div>
+
+    <sc-if value="{{ detTemCurva }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-top:16px">
+      <div style="font:600 10px 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(241,241,242,.45)">{{ detEixo }}</div>
+      <div style="position:relative;width:350px;height:154px;margin-top:6px">
+        <svg viewBox="0 0 350 134" style="position:absolute;left:0;top:0;width:350px;height:134px;overflow:visible">
+          <sc-for list="{{ grade }}" as="g" hint-placeholder-count="4">
+            <line x1="26" x2="350" y1="{{ g.y }}" y2="{{ g.y }}" stroke="rgba(241,241,242,.12)" stroke-width="1"></line>
+          </sc-for>
+          <polyline points="{{ linha }}" fill="none" stroke="#94bce3" stroke-width="2"></polyline>
+          <sc-for list="{{ pontos }}" as="p" hint-placeholder-count="6">
+            <rect x="{{ p.x }}" y="{{ p.y }}" width="7" height="7" fill="#191b1d" stroke="#94bce3" stroke-width="2"></rect>
+          </sc-for>
+        </svg>
+        <sc-for list="{{ grade }}" as="g" hint-placeholder-count="4">
+          <span style="position:absolute;left:0;top:{{ g.top }};font-size:10px;color:rgba(241,241,242,.42)">{{ g.rotulo }}</span>
+        </sc-for>
+        <sc-for list="{{ pontos }}" as="p" hint-placeholder-count="6">
+          <span style="position:absolute;top:138px;left:{{ p.left }};transform:translateX(-50%);font-size:10px;color:rgba(241,241,242,.42);white-space:nowrap">{{ p.data }}</span>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ detUmPonto }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:18px;padding:16px" class="blueprint"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="font-family:var(--font-heading);font-size:38px;line-height:1">20 kg</div>
+      <div style="font-size:12.5px;color:rgba(241,241,242,.55);margin-top:6px">Uma sessão registrada, em 12/08. A curva começa na segunda — comparar um ponto com nada não diz se você evoluiu.</div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ detVazio }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:18px;padding:16px" class="blueprint"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div style="font-size:14px;line-height:1.5">Nenhuma série registrada neste exercício ainda.</div>
+      <div style="font-size:12.5px;color:rgba(241,241,242,.5);margin-top:6px">Na ficha do Treino A: 3×10 · 2 placas. É o único 3×10 das suas fichas.</div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ detTemRecordes }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-top:20px;padding-top:12px;border-top:1px solid rgba(241,241,242,.16)">
+      <div style="font:600 10px 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(241,241,242,.45);margin-bottom:6px">Recordes</div>
+      <sc-for list="{{ detRecordes }}" as="r" hint-placeholder-count="4">
+        <div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0"><span style="color:rgba(241,241,242,.6)">{{ r.rotulo }}</span><span style="color:{{ r.cor }}">{{ r.valor }}</span></div>
+      </sc-for>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ detConvite }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-top:18px;padding:14px;border:1px dashed rgba(148,188,227,.5)">
+      <div style="font-size:13.5px;line-height:1.5">Esta máquina não está calibrada, então o app fala em placas.</div>
+      <div style="font-size:12px;color:rgba(241,241,242,.5);margin-top:4px">Se a etiqueta disser quanto pesa cada placa, o histórico inteiro ganha uma leitura em quilos. Nada é reescrito.</div>
+      <button class="btn btn-secondary" onClick="{{ abrirCalibrar }}" style="margin-top:12px;height:42px;font-size:14px;width:100%">Calibrar a placa</button>
+    </div>
+    </sc-if>
+    <sc-if value="{{ detCalibrado }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:18px;padding:14px;border:1px solid rgba(241,241,242,.16)">
+      <div style="font-size:13.5px">Calibrada em <strong>5 kg por placa</strong> — leitura aproximada.</div>
+      <div style="font-size:12px;color:rgba(241,241,242,.5);margin-top:4px">6 placas (~30 kg). A curva continua em placas.</div>
+      <button class="btn btn-ghost" onClick="{{ abrirCalibrar }}" style="font-size:12.5px;padding-left:0;margin-top:6px">corrigir</button>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ telaCorpo }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <div style="padding:12px 20px 0"><h2 style="font-family:var(--font-heading);font-size:32px;margin:0">Corpo</h2></div>
+
+  <sc-if value="{{ corpoVazio }}" hint-placeholder-val="{{ true }}">
+  <div style="flex:1;display:flex;flex-direction:column;padding:0 20px">
+    <div style="margin-top:26px">
+      <div style="font-family:var(--font-heading);font-size:56px;line-height:1;color:rgba(241,241,242,.28)">— kg</div>
+      <div style="font-size:13.5px;color:rgba(241,241,242,.6);margin-top:8px;max-width:280px;text-wrap:pretty">Nenhuma pesagem registrada. Pese-se de manhã, uma vez por dia.</div>
+    </div>
+    <button class="btn btn-primary blueprint" onClick="{{ ligarDemo }}" style="height:72px;margin-top:22px;font-size:21px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>REGISTRAR PESO</button>
+    <div style="margin-top:26px;padding-top:14px;border-top:1px solid rgba(241,241,242,.16);display:flex;flex-direction:column;gap:2px">
+      <button class="btn btn-ghost" style="justify-content:space-between;padding:12px 0;font-size:14px;font-family:var(--font-body);color:inherit"><span>Sua altura</span><span style="color:#94bce3">informar</span></button>
+      <div style="font-size:11.5px;color:rgba(241,241,242,.4);margin:-6px 0 8px">Sem altura não há IMC. É um convite, não um erro.</div>
+      <button class="btn btn-ghost" style="justify-content:space-between;padding:12px 0;font-size:14px;font-family:var(--font-body);color:inherit"><span>Um objetivo de peso</span><span style="color:#94bce3">definir</span></button>
+      <button class="btn btn-ghost" style="justify-content:space-between;padding:12px 0;font-size:14px;font-family:var(--font-body);color:inherit"><span>Medidas com a trena</span><span style="color:#94bce3">medir</span></button>
+    </div>
+    <div style="margin-top:auto;margin-bottom:20px;font-size:12px;color:rgba(241,241,242,.38);line-height:1.5">Tendência do peso: aparece a partir de 4 pesagens em 14 dias. Antes disso não há número honesto para mostrar.</div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ corpoCheio }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow:auto;padding:0 20px 20px">
+    <div style="margin-top:18px;display:flex;align-items:flex-end;gap:12px">
+      <div>
+        <div style="font-family:var(--font-heading);font-size:60px;line-height:.92">78,4 kg</div>
+        <div style="font-size:12.5px;color:rgba(241,241,242,.55);margin-top:2px">hoje, 07:02 · média de 7 dias: <strong style="color:#f1f1f2">78,9 kg</strong></div>
+      </div>
+    </div>
+    <svg viewBox="0 0 350 74" style="width:100%;height:74px;margin-top:14px">
+      <polyline points="0,10 44,14 88,9 132,22 176,18 220,31 264,28 307,40 350,46" fill="none" stroke="rgba(241,241,242,.25)" stroke-width="1"></polyline>
+      <polyline points="0,13 44,15 88,17 132,20 176,24 220,29 264,33 307,39 350,44" fill="none" stroke="#94bce3" stroke-width="2"></polyline>
+    </svg>
+    <div style="font-size:11px;color:rgba(241,241,242,.4)">a linha fina é cada pesagem; a grossa é a média de 7 dias — é ela que conta</div>
+
+    <div style="margin-top:20px;padding-top:14px;border-top:1px solid rgba(241,241,242,.16);display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:rgba(241,241,242,.6)">Objetivo — perder</span><span>faltam 3,4 kg de 82 → 75</span></div>
+      <div style="height:5px;background:rgba(241,241,242,.14)"><div style="width:51%;height:100%;background:#94bce3"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:rgba(241,241,242,.6)">Tendência (63 dias)</span><span>−0,4 kg por semana · 9 pesagens</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:rgba(241,241,242,.6)">IMC (1,75 m)</span><span>25,60 · sobrepeso</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:rgba(241,241,242,.6)">Faixa normal</span><span>56,6 – 76,2 kg</span></div>
+    </div>
+
+    <div style="margin-top:20px;padding-top:14px;border-top:1px solid rgba(241,241,242,.16)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 10px 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(241,241,242,.45)">Medidas</span><span style="font-size:11.5px;color:rgba(241,241,242,.4)">3 de 12 partes</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <span class="tag tag-neutral" style="font-size:12px">cintura 84,0 cm</span>
+        <span class="tag tag-neutral" style="font-size:12px">braço D 33,5 cm</span>
+        <span class="tag tag-neutral" style="font-size:12px">peito 98,0 cm</span>
+        <button class="btn btn-secondary" onClick="{{ desligarDemo }}" style="font-size:12px;padding:3px 10px">+ medir</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" onClick="{{ desligarDemo }}" style="width:100%;height:60px;margin-top:22px;font-size:19px">REGISTRAR PESO</button>
+  </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ telaFicha }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <div style="padding:12px 20px 0">
+    <button class="btn btn-ghost" onClick="{{ irAjustes }}" style="font-size:12.5px;padding-left:0">← ajustes</button>
+    <h2 style="font-family:var(--font-heading);font-size:30px;margin:4px 0 0">Treino C — Peito, ombros e tríceps</h2>
+    <div style="font-size:12px;color:rgba(241,241,242,.5);margin-top:2px">8 exercícios · toque para editar · arraste para reordenar</div>
+  </div>
+  <div style="flex:1;overflow:auto;padding:10px 20px 20px">
+    <sc-for list="{{ fichaItens }}" as="i" hint-placeholder-count="8">
+      <button onClick="{{ abrirItem }}" style="display:flex;width:100%;gap:12px;align-items:center;text-align:left;padding:12px 0;background:transparent;border:0;border-bottom:1px solid rgba(241,241,242,.1);color:inherit;cursor:pointer;font-family:inherit">
+        <span style="font-size:11px;color:rgba(241,241,242,.3);width:14px;flex:none">{{ i.n }}</span>
+        <span style="flex:1;font-size:14.5px;line-height:1.25;text-wrap:pretty">{{ i.nome }}</span>
+        <span style="font:600 13px 'Barlow Condensed',sans-serif;letter-spacing:.03em;color:#94bce3;flex:none;text-align:right;white-space:nowrap">{{ i.alvo }}</span>
+      </button>
+    </sc-for>
+    <button class="btn btn-secondary" onClick="{{ abrirCatalogo }}" style="width:100%;height:48px;margin-top:14px;font-size:14px;border-style:dashed">+ adicionar do catálogo</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ telaAjustes }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:12px 20px 0">
+  <h2 style="font-family:var(--font-heading);font-size:32px;margin:0">Ajustes</h2>
+  <div style="margin-top:16px;display:flex;flex-direction:column">
+    <button onClick="{{ irFicha }}" style="display:flex;justify-content:space-between;align-items:center;padding:16px 0;background:transparent;border:0;border-bottom:1px solid rgba(241,241,242,.12);color:inherit;cursor:pointer;font-family:inherit;text-align:left"><span><span style="font-size:15px">Fichas e exercícios</span><br><span style="font-size:11.5px;color:rgba(241,241,242,.45)">3 treinos · 24 exercícios</span></span><span style="color:#94bce3">›</span></button>
+    <button onClick="{{ irBackup }}" style="display:flex;justify-content:space-between;align-items:center;padding:16px 0;background:transparent;border:0;border-bottom:1px solid rgba(241,241,242,.12);color:inherit;cursor:pointer;font-family:inherit;text-align:left"><span><span style="font-size:15px">Backup</span><br><span style="font-size:11.5px;color:rgba(241,241,242,.45)">último há 47 dias</span></span><span style="color:#94bce3">›</span></button>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid rgba(241,241,242,.12)"><span style="font-size:15px">Tema</span><span style="font-size:13px;color:rgba(241,241,242,.6)">escuro · segue o sistema</span></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ telaBackup }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:12px 20px 0">
+  <button class="btn btn-ghost" onClick="{{ irAjustes }}" style="font-size:12.5px;padding-left:0;align-self:flex-start">← ajustes</button>
+  <h2 style="font-family:var(--font-heading);font-size:32px;margin:4px 0 0">Backup</h2>
+  <div style="margin-top:18px;padding:16px" class="blueprint"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div style="font-family:var(--font-heading);font-size:23px">Último backup: 30/06</div>
+    <div style="font-size:13px;color:rgba(241,241,242,.6);margin-top:6px;line-height:1.5">Há 47 dias. Desde então: 14 sessões e 9 pesagens que só existem neste aparelho.</div>
+  </div>
+  <button class="btn btn-primary" style="height:64px;margin-top:18px;font-size:19px">EXPORTAR TUDO</button>
+  <div style="font-size:11.5px;color:rgba(241,241,242,.4);margin-top:8px">Gera um arquivo e abre o compartilhamento. Mande para onde quiser.</div>
+  <div style="margin-top:auto;margin-bottom:24px;padding-top:16px;border-top:1px solid rgba(241,241,242,.16)">
+    <div style="font-size:13px;color:rgba(241,241,242,.6);line-height:1.5">Restaurar substitui tudo que está neste aparelho pelo conteúdo do arquivo.</div>
+    <button class="btn btn-secondary" onClick="{{ abrirRestaurar }}" style="height:48px;margin-top:10px;font-size:15px;width:100%">Restaurar de um arquivo</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ barra }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;border-top:1px solid rgba(241,241,242,.14);flex:none">
+  <button onClick="{{ irHoje }}" style="flex:1;height:62px;background:transparent;border:0;cursor:pointer;font:600 13px 'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:{{ corHoje }}">Treinar</button>
+  <button onClick="{{ irHist }}" style="flex:1;height:62px;background:transparent;border:0;border-left:1px solid rgba(241,241,242,.14);cursor:pointer;font:600 13px 'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:{{ corHist }}">Histórico</button>
+  <button onClick="{{ irCorpo }}" style="flex:1;height:62px;background:transparent;border:0;border-left:1px solid rgba(241,241,242,.14);cursor:pointer;font:600 13px 'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:{{ corCorpo }}">Corpo</button>
+  <button onClick="{{ irAjustes }}" style="width:62px;height:62px;background:transparent;border:0;border-left:1px solid rgba(241,241,242,.14);cursor:pointer;font-size:19px;color:{{ corAjustes }}">≡</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetTeclado }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(12,13,14,.72);display:flex;flex-direction:column;justify-content:flex-end">
+  <div style="background:#232629;border-top:1px solid rgba(241,241,242,.2);padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;color:rgba(241,241,242,.6)">Carga em {{ atualUnidade }}</span><button class="btn btn-ghost" onClick="{{ fecharSheet }}" style="font-size:13px">cancelar</button></div>
+    <div style="font-family:var(--font-heading);font-size:52px;line-height:1.1;margin:4px 0 12px">{{ digitado }}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <sc-for list="{{ teclas }}" as="k" hint-placeholder-count="12">
+        <button class="btn btn-secondary" onClick="{{ k.tocar }}" style="height:54px;font-size:22px">{{ k.t }}</button>
+      </sc-for>
+    </div>
+    <button class="btn btn-primary" onClick="{{ usarDigitado }}" style="width:100%;height:56px;margin-top:10px;font-size:18px">USAR</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetFinalizar }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(12,13,14,.72);display:flex;align-items:center;padding:20px">
+  <div class="dialog" style="background:#232629;border-color:rgba(241,241,242,.2)">
+    <div class="dialog-title">Finalizar o treino?</div>
+    <div class="dialog-body">{{ textoFinalizar }}</div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-secondary" onClick="{{ fecharSheet }}" style="flex:1;height:46px">Voltar</button><button class="btn btn-primary" onClick="{{ finalizar }}" style="flex:1;height:46px">Finalizar</button></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetCalibrar }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(12,13,14,.72);display:flex;flex-direction:column;justify-content:flex-end">
+  <div style="background:#232629;border-top:1px solid rgba(241,241,242,.2);padding:18px 18px 24px">
+    <div style="font-family:var(--font-heading);font-size:25px">Quanto pesa cada placa?</div>
+    <div style="font-size:13px;color:rgba(241,241,242,.6);margin-top:6px;line-height:1.5">Está na etiqueta da máquina. Nenhuma série é reescrita: a calibração é uma leitura, e você pode corrigir depois.</div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <sc-for list="{{ opcoesPlaca }}" as="o" hint-placeholder-count="4">
+        <button class="btn btn-secondary" onClick="{{ o.tocar }}" style="height:52px;flex:1;font-size:17px;min-width:70px">{{ o.t }}</button>
+      </sc-for>
+    </div>
+    <div style="font-size:12px;color:rgba(241,241,242,.45);margin-top:12px">Com 5 kg por placa, o histórico passa a ler “6 placas (~30 kg)”. O til fica: alavanca e roldana não são proporcionais.</div>
+    <div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-secondary" onClick="{{ fecharSheet }}" style="flex:1;height:46px">Não sei</button><button class="btn btn-ghost" onClick="{{ descalibrar }}" style="flex:none;height:46px;font-size:13px">descalibrar</button></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetItem }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(12,13,14,.72);display:flex;flex-direction:column;justify-content:flex-end">
+  <div style="background:#232629;border-top:1px solid rgba(241,241,242,.2);padding:18px 18px 24px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--font-heading);font-size:23px">Elevação Frontal c/ Halteres</span><button class="btn btn-ghost" onClick="{{ fecharSheet }}" style="font-size:13px">fechar</button></div>
+    <div style="font-size:11.5px;color:rgba(241,241,242,.45);margin-top:2px">medido em kg · degrau de 1 kg</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+      <div class="field"><label>Séries</label><input class="input" value="4" style="background:#191b1d;color:#f1f1f2"></div>
+      <div class="field"><label>Repetições</label><input class="input" value="12" style="background:#191b1d;color:#f1f1f2"></div>
+      <div class="field"><label>Carga alvo</label><input class="input" value="4 kg" style="background:#191b1d;color:#f1f1f2"></div>
+      <div class="field"><label>Descanso</label><input class="input" value="90 s" style="background:#191b1d;color:#f1f1f2"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-primary" onClick="{{ fecharSheet }}" style="flex:1;height:48px;font-size:16px">Salvar</button><button class="btn btn-secondary" onClick="{{ fecharSheet }}" style="flex:none;height:48px;font-size:14px">Tirar da ficha</button></div>
+    <div style="font-size:11.5px;color:rgba(241,241,242,.4);margin-top:12px">Mudar a unidade de medição fica no catálogo, não aqui: em exercício com histórico é conversão destrutiva.</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetCatalogo }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(12,13,14,.72);display:flex;flex-direction:column;justify-content:flex-end">
+  <div style="background:#232629;border-top:1px solid rgba(241,241,242,.2);padding:18px 18px 24px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--font-heading);font-size:23px">Catálogo</span><button class="btn btn-ghost" onClick="{{ fecharSheet }}" style="font-size:13px">fechar</button></div>
+    <input class="input" placeholder="buscar entre 24 exercícios" style="margin-top:12px;height:44px;background:#191b1d;color:#f1f1f2">
+    <div style="margin-top:10px">
+      <sc-for list="{{ catalogo }}" as="c" hint-placeholder-count="4">
+        <div style="display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid rgba(241,241,242,.1);font-size:14px"><span>{{ c.nome }}</span><span style="color:rgba(241,241,242,.45);font-size:11.5px;flex:none">{{ c.tipo }}</span></div>
+      </sc-for>
+    </div>
+    <button class="btn btn-secondary" onClick="{{ fecharSheet }}" style="width:100%;height:46px;margin-top:14px;font-size:14px;border-style:dashed">+ criar exercício novo</button>
+    <div style="font-size:11.5px;color:rgba(241,241,242,.4);margin-top:10px">Criar pede nome, grupo e como é medido — placa, kg, peso corporal, tempo ou distância. É a decisão mais cara da tela e a única que não dá para trocar depois sem custo.</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetRestaurar }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(12,13,14,.72);display:flex;align-items:center;padding:20px">
+  <div class="dialog" style="background:#232629;border-color:rgba(241,241,242,.2)">
+    <div class="dialog-title">Restaurar apaga o que está aqui</div>
+    <div class="dialog-body">Neste aparelho existem hoje <strong>151 sessões</strong> e <strong>96 pesagens</strong>. Restaurar substitui tudo pelo conteúdo do arquivo escolhido. Não há como voltar.</div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-secondary" onClick="{{ fecharSheet }}" style="flex:1;height:46px">Cancelar</button><button class="btn btn-primary" onClick="{{ fecharSheet }}" style="flex:1;height:46px">Escolher arquivo</button></div>
+  </div>
+</div>
+</sc-if>
+
+</div></div>
+<p class="dv-onote">Uma série em um toque: o botão diz o que vai gravar. O aquecimento é o segundo botão, também de um toque, tracejado porque não conta. Estados da tela de abrir no rodapé (demo).</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Registrar arrastando</div>
+<div class="bez"><div class="scr" style="--color-bg:#191b1d;--color-surface:#232629;--color-text:#f1f1f2;--color-divider:rgba(241,241,242,.16);--color-accent:#94bce3;background:#191b1d;color:#f1f1f2">
+<div style="display:flex;justify-content:space-between;height:30px;padding:0 18px;font-size:11px;color:rgba(241,241,242,.45);flex:none;align-items:center"><span>19:07</span><span>4G · 62%</span></div>
+<div style="padding:10px 16px 0;display:flex;justify-content:space-between;align-items:center"><div style="font-family:var(--font-heading);font-size:19px">Treino B — Pernas</div><span style="font-size:11px;color:rgba(241,241,242,.4)">16/29</span></div>
+<div style="padding:26px 16px 0">
+  <h3 style="font-family:var(--font-heading);font-size:29px;margin:0">Cadeira Flexora</h3>
+  <div style="font-size:12px;color:rgba(241,241,242,.5);margin-top:5px">3ª de 4 · igual à semana passada · descanso 0:47</div>
+</div>
+<div style="flex:1;position:relative;margin:22px 16px 0;border:1px solid rgba(241,241,242,.16)">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px">
+    <div style="font-size:12px;color:rgba(241,241,242,.35)">7 placas</div>
+    <div style="font-family:var(--font-heading);font-size:96px;line-height:.9;color:#94bce3">6</div>
+    <div style="font-size:15px;color:rgba(241,241,242,.6)">placas × 10</div>
+    <div style="font-size:12px;color:rgba(241,241,242,.35);margin-top:2px">5 placas</div>
+  </div>
+  <div style="position:absolute;left:0;right:0;top:64%;height:1px;background:rgba(148,188,227,.35)"></div>
+  <div style="position:absolute;left:0;right:0;top:26%;height:1px;background:rgba(148,188,227,.35)"></div>
+  <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:11.5px;color:rgba(241,241,242,.4)">arraste ↑ ↓ para mudar a carga · solte para registrar</div>
+</div>
+<div style="padding:14px 16px 26px;display:flex;gap:9px">
+  <button class="btn btn-secondary" style="width:96px;height:78px;border-style:dashed;font-size:14px">AQUEC.</button>
+  <div class="blueprint" style="flex:1;height:78px;display:flex;align-items:center;justify-content:center;font:600 15px 'Barlow Condensed',sans-serif;letter-spacing:.06em;color:rgba(241,241,242,.45);border-style:dashed"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>SEM BOTÃO: O GESTO É O REGISTRO</div>
+</div>
+</div></div>
+<p class="dv-onote">Um toque vira zero botões: o polegar arrasta e solta. Mais rápido para quem pegou o jeito, invisível para quem não pegou — e um deslize acidental grava a série errada.</p>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>A carga é o botão</div>
+<div class="bez"><div class="scr" style="--color-bg:#191b1d;--color-surface:#232629;--color-text:#f1f1f2;--color-divider:rgba(241,241,242,.16);--color-accent:#94bce3;background:#191b1d;color:#f1f1f2">
+<div style="display:flex;justify-content:space-between;height:30px;padding:0 18px;font-size:11px;color:rgba(241,241,242,.45);flex:none;align-items:center"><span>19:07</span><span>4G · 62%</span></div>
+<div style="padding:10px 16px 0;display:flex;justify-content:space-between;align-items:center"><div style="font-family:var(--font-heading);font-size:19px">Treino B — Pernas</div><span style="font-size:11px;color:rgba(241,241,242,.4)">16/29</span></div>
+<div style="padding:22px 16px 0">
+  <h3 style="font-family:var(--font-heading);font-size:29px;margin:0">Cadeira Flexora</h3>
+  <div style="font-size:12px;color:rgba(241,241,242,.5);margin-top:5px">3ª de 4 · 10 reps · descanso 0:47</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding:20px 16px 0;flex:1">
+  <button class="btn btn-secondary" style="height:74px;justify-content:space-between;padding:0 20px;font-family:var(--font-body)"><span style="font-family:var(--font-heading);font-size:34px">7</span><span style="font-size:12px;opacity:.55">subir uma placa</span></button>
+  <button class="btn btn-primary blueprint" style="height:132px;justify-content:space-between;padding:0 20px;font-family:var(--font-body)"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span style="font-family:var(--font-heading);font-size:76px;line-height:1">6</span><span style="font-size:13px;text-align:right;line-height:1.35">placas × 10<br><span style="opacity:.7">igual à semana passada</span></span></button>
+  <button class="btn btn-secondary" style="height:74px;justify-content:space-between;padding:0 20px;font-family:var(--font-body)"><span style="font-family:var(--font-heading);font-size:34px">5</span><span style="font-size:12px;opacity:.55">descer uma placa</span></button>
+  <div style="display:flex;gap:9px;margin-top:4px">
+    <button class="btn btn-secondary" style="flex:1;height:56px;border-style:dashed;font-size:14px">AQUEC.</button>
+    <button class="btn btn-secondary" style="flex:1;height:56px;font-size:14px">outra carga</button>
+    <button class="btn btn-secondary" style="flex:1;height:56px;font-size:14px">± reps</button>
+  </div>
+</div>
+<div style="padding:0 16px 26px;font-size:11.5px;color:rgba(241,241,242,.4)">Tocar a carga JÁ registra a série com ela. Ajustar e confirmar são o mesmo toque.</div>
+</div></div>
+<p class="dv-onote">O caso comum e os dois vizinhos ficam à mão: um toque para repetir, um toque para progredir. Some o par −/+ e some a confirmação. Custo: três alvos grandes competindo pelo mesmo polegar.</p>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>O treino inteiro em lista</div>
+<div class="bez"><div class="scr" style="--color-bg:#191b1d;--color-surface:#232629;--color-text:#f1f1f2;--color-divider:rgba(241,241,242,.16);--color-accent:#94bce3;--color-neutral-100:#2b2b2d;--color-neutral-800:#e7e7ea;background:#191b1d;color:#f1f1f2">
+<div style="display:flex;justify-content:space-between;height:30px;padding:0 18px;font-size:11px;color:rgba(241,241,242,.45);flex:none;align-items:center"><span>19:07</span><span>4G · 62%</span></div>
+<div style="padding:10px 16px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(241,241,242,.14)"><div style="font-family:var(--font-heading);font-size:19px">Treino B — Pernas</div><span style="font-size:11px;color:rgba(241,241,242,.4)">16 de 29 séries</span></div>
+<div style="flex:1;overflow:hidden">
+  <sc-for list="{{ listaCompleta }}" as="l" hint-placeholder-count="9">
+    <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid rgba(241,241,242,.08);background:{{ l.fundo }}">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14.5px;line-height:1.2;color:{{ l.corNome }};text-wrap:pretty">{{ l.nome }}</div>
+        <div style="font-size:11.5px;color:rgba(241,241,242,.45);margin-top:2px">{{ l.alvo }}</div>
+      </div>
+      <div style="display:flex;gap:3px;flex:none">
+        <sc-for list="{{ l.dots }}" as="d" hint-placeholder-count="4">
+          <span style="width:14px;height:22px;border:1px solid {{ d.borda }};background:{{ d.fundo }}"></span>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+<div style="padding:12px 16px 26px;border-top:1px solid rgba(241,241,242,.14)">
+  <div style="font-size:11.5px;color:rgba(241,241,242,.4);margin-bottom:8px">Toque no próximo quadrado de qualquer linha para registrar. A linha ativa fica destacada.</div>
+  <button class="btn btn-primary" style="width:100%;height:60px;font-size:19px">REGISTRAR 3ª DE CADEIRA FLEXORA · 6 PLACAS</button>
+</div>
+</div></div>
+<p class="dv-onote">Tudo visível: dá para pular de exercício e ver as quatro unidades convivendo (placa, kg, 12 reps sem carga, 10 min), a 5ª série extra da Extensora e o improvisado fora da ficha. O número grande é o preço.</p>
+</div>
+
+<div class="dv-opt" id="1e">
+<div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Abrir: cartão único</div>
+<div class="bez"><div class="scr" style="--color-bg:#191b1d;--color-surface:#232629;--color-text:#f1f1f2;--color-divider:rgba(241,241,242,.16);--color-accent:#94bce3;background:#191b1d;color:#f1f1f2">
+<div style="display:flex;justify-content:space-between;height:30px;padding:0 18px;font-size:11px;color:rgba(241,241,242,.45);flex:none;align-items:center"><span>18:41</span><span>4G · 62%</span></div>
+<div style="flex:1;display:flex;flex-direction:column;padding:24px 20px 0">
+  <div style="font:600 11px 'Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#94bce3">Segunda · você fez A na sexta</div>
+  <h2 style="font-family:var(--font-heading);font-size:52px;line-height:.98;margin:10px 0 0">Hoje é o<br>Treino B</h2>
+  <div style="font-size:14.5px;color:rgba(241,241,242,.7);margin-top:10px">Pernas · 8 exercícios · 29 séries</div>
+  <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:6px">
+    <span class="tag tag-outline" style="font-size:11.5px">Seated Leg Press 20 kg</span>
+    <span class="tag tag-outline" style="font-size:11.5px">Extensora 6 placas</span>
+    <span class="tag tag-outline" style="font-size:11.5px">Esteira 10 min</span>
+    <span class="tag tag-outline" style="font-size:11.5px">+5</span>
+  </div>
+  <button class="btn btn-primary blueprint" style="height:120px;margin-top:24px;font-size:30px;letter-spacing:.05em"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>COMEÇAR</button>
+  <button class="btn btn-ghost" style="margin-top:14px;font-size:14px">treinar outro dia da rotação</button>
+  <div style="margin-top:auto;margin-bottom:22px;font-size:11.5px;color:rgba(241,241,242,.38)">A rotação ABC é previsível, então o app aposta — e deixa a aposta fácil de recusar.</div>
+</div>
+</div></div>
+<p class="dv-onote">Decide pelo usuário no caso de 90%: um alvo enorme, zero leitura. Erra quando ele fura a ordem, e aí o desvio custa dois toques.</p>
+</div>
+
+<div class="dv-opt" id="1f">
+<div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>Abrir: já dentro do treino</div>
+<div class="bez"><div class="scr" style="--color-bg:#191b1d;--color-surface:#232629;--color-text:#f1f1f2;--color-divider:rgba(241,241,242,.16);--color-accent:#94bce3;background:#191b1d;color:#f1f1f2">
+<div style="display:flex;justify-content:space-between;height:30px;padding:0 18px;font-size:11px;color:rgba(241,241,242,.45);flex:none;align-items:center"><span>18:41</span><span>4G · 62%</span></div>
+<div style="display:flex;gap:0;padding:8px 16px 0">
+  <button class="btn btn-secondary" style="flex:1;height:38px;font-size:13px;opacity:.5">A</button>
+  <button class="btn btn-primary" style="flex:1;height:38px;font-size:13px">B</button>
+  <button class="btn btn-secondary" style="flex:1;height:38px;font-size:13px;opacity:.5">C</button>
+</div>
+<div style="padding:20px 16px 0">
+  <h3 style="font-family:var(--font-heading);font-size:29px;margin:0">Seated Leg Press</h3>
+  <div style="font-size:12px;color:rgba(241,241,242,.5);margin-top:5px">1ª de 4 · da ficha · nada registrado hoje</div>
+</div>
+<div style="display:flex;align-items:center;gap:14px;padding:22px 16px 0">
+  <button class="btn btn-secondary" style="width:66px;height:66px;font-size:30px">−</button>
+  <div style="flex:1;text-align:center"><div style="font-family:var(--font-heading);font-size:88px;line-height:.86">20</div><div style="font-size:15px;color:rgba(241,241,242,.6)">kg</div></div>
+  <button class="btn btn-secondary" style="width:66px;height:66px;font-size:30px">+</button>
+</div>
+<div style="margin:22px 16px 0;padding:12px 14px;border-top:1px solid rgba(241,241,242,.16);border-bottom:1px solid rgba(241,241,242,.16);font-size:13px;color:rgba(241,241,242,.6)">repetições <span style="font-family:var(--font-heading);font-size:22px;color:#f1f1f2;margin-left:8px">10</span></div>
+<div style="margin-top:auto;padding:0 16px 26px">
+  <div style="font-size:11.5px;color:rgba(241,241,242,.4);margin-bottom:8px">O app abre aqui. Trocar o treino é a fita de cima; escolher deixou de ser uma tela.</div>
+  <div style="display:flex;gap:9px">
+    <button class="btn btn-secondary" style="width:96px;height:104px;border-style:dashed;font-size:15px">AQUEC.</button>
+    <button class="btn btn-primary blueprint" style="flex:1;height:104px;flex-direction:column;font-family:var(--font-body)"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span style="font-family:var(--font-heading);font-size:27px;letter-spacing:.05em">REGISTRAR</span><span style="font-size:12.5px;opacity:.8">20 kg × 10</span></button>
+  </div>
+</div>
+</div></div>
+<p class="dv-onote">O extremo: nenhuma tela de abrir. Retomar e começar custam zero toque, e a primeira série custa um. Risco: gravar no treino errado quando ele fura a rotação.</p>
+</div>
+
+<div class="dv-opt" id="1g">
+<div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a>Navegação: proposta × abas</div>
+<div class="dv-card" style="width:390px;background:transparent;border:0">
+<div class="blueprint" style="padding:18px;background:#fff"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+  <div style="font:600 11px 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#416180">Proposta — dois mundos</div>
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <div style="flex:1;border:1px solid rgba(29,31,32,.18);padding:10px">
+      <div style="font:600 14px 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase">De pé, treinando</div>
+      <div style="font-size:12px;color:rgba(29,31,32,.6);margin-top:6px;line-height:1.45">Executar toma a tela inteira. Sem abas, sem gaveta, sem volta acidental. Só sai por FINALIZAR → Resumo.</div>
+    </div>
+    <div style="flex:1;border:1px solid rgba(29,31,32,.18);padding:10px">
+      <div style="font:600 14px 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase">Sentado, lendo</div>
+      <div style="font-size:12px;color:rgba(29,31,32,.6);margin-top:6px;line-height:1.45">Três abas: Treinar · Histórico · Corpo. O ≡ guarda o que é de casa: fichas, catálogo, backup.</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12px;color:rgba(29,31,32,.6);flex-wrap:wrap">
+    <span style="padding:4px 8px;border:1px solid rgba(29,31,32,.25)">Treinar</span>→
+    <span style="padding:4px 8px;border:1px solid #5980a6;color:#416180;background:rgba(89,128,166,.12)">Executar (takeover)</span>→
+    <span style="padding:4px 8px;border:1px solid rgba(29,31,32,.25)">Resumo</span>→
+    <span style="padding:4px 8px;border:1px solid rgba(29,31,32,.25)">Treinar</span>
+  </div>
+  <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(29,31,32,.14)">
+    <div style="font:600 11px 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(29,31,32,.5)">Alternativa: abas o tempo todo</div>
+    <div style="font-size:12px;color:rgba(29,31,32,.6);margin-top:6px;line-height:1.45">Mantém 4 abas visíveis inclusive treinando. Ganha: sair para ver o histórico de um exercício no meio da série. Perde: 62 px do polegar e um alvo de saída acidental ao lado do botão mais tocado do app. Eu não recomendo — mas é uma linha de código.</div>
+  </div>
+  <div style="margin-top:14px;font-size:12px;color:rgba(29,31,32,.6);line-height:1.45"><strong>Ficha e catálogo:</strong> uma tela, não duas. A ficha é a lista; o catálogo é a folha que sobe quando você adiciona. As propriedades do exercício (nome, medição, degrau) se editam onde você encontra o exercício, não numa segunda tela paralela.</div>
+</div>
+</div>
+<p class="dv-onote">A resposta à sua pergunta do Prompt 6, desenhada: uma tela com uma folha, mais o mapa completo de navegação.</p>
+</div>
+
+<div class="dv-opt" id="1h">
+<div class="dv-olabel"><a class="dv-oid" href="#1h">1h</a>A mesma tela no claro</div>
+<div class="bez" style="background:#d4d4d7"><div class="scr" style="background:#f2f2f3;color:#1d1f20">
+<div style="display:flex;justify-content:space-between;height:30px;padding:0 18px;font-size:11px;color:rgba(29,31,32,.45);flex:none;align-items:center"><span>10:22</span><span>4G · 88%</span></div>
+<div style="padding:6px 16px 0;display:flex;justify-content:space-between;align-items:center">
+  <div><div style="font-family:var(--font-heading);font-size:19px">Treino B — Pernas</div><div style="font-size:10.5px;color:rgba(29,31,32,.45);margin-top:1px">tela acordada · 16 de 29 séries</div></div>
+  <button class="btn btn-secondary" style="font-size:12px;height:34px">FINALIZAR</button>
+</div>
+<div style="display:flex;gap:3px;padding:12px 16px 0">
+  <div style="flex:1;height:4px;background:#5980a6"></div><div style="flex:1;height:4px;background:#5980a6"></div><div style="flex:1;height:4px;background:#5980a6"></div><div style="flex:1;height:4px;background:#94bce3"></div><div style="flex:1;height:4px;background:rgba(29,31,32,.14)"></div><div style="flex:1;height:4px;background:rgba(29,31,32,.14)"></div><div style="flex:1;height:4px;background:rgba(29,31,32,.14)"></div><div style="flex:1;height:4px;background:rgba(29,31,32,.14)"></div><div style="flex:1;height:4px;background:rgba(29,31,32,.14)"></div>
+</div>
+<div style="padding:22px 16px 0">
+  <div style="display:flex;align-items:baseline;justify-content:space-between"><h3 style="font-family:var(--font-heading);font-size:29px;margin:0">Cadeira Flexora</h3><div style="font:600 12px 'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#416180">3ª de 4</div></div>
+  <div style="font-size:12px;color:rgba(29,31,32,.55);margin-top:7px">igual à semana passada · descanso 0:47</div>
+</div>
+<div style="display:flex;align-items:center;gap:14px;padding:14px 16px 0">
+  <button class="btn btn-secondary" style="width:66px;height:66px;font-size:30px">−</button>
+  <div style="flex:1;text-align:center"><div style="font-family:var(--font-heading);font-size:88px;line-height:.86">6</div><div style="font-size:15px;color:rgba(29,31,32,.6)">placas</div></div>
+  <button class="btn btn-secondary" style="width:66px;height:66px;font-size:30px">+</button>
+</div>
+<div style="margin:16px 16px 0;padding:10px 14px;border-top:1px solid rgba(29,31,32,.16);border-bottom:1px solid rgba(29,31,32,.16);display:flex;justify-content:space-between;align-items:center">
+  <div style="font-size:13px;color:rgba(29,31,32,.6)">repetições <span style="font-family:var(--font-heading);font-size:22px;color:#1d1f20;margin-left:8px">10</span></div>
+  <div style="display:flex;gap:8px"><button class="btn btn-secondary" style="width:46px;height:40px;font-size:20px">−</button><button class="btn btn-secondary" style="width:46px;height:40px;font-size:20px">+</button></div>
+</div>
+<div style="padding:16px 16px 0;display:flex;gap:8px;align-items:center">
+  <span class="tag" style="border:1px dashed rgba(29,31,32,.4);font-size:11.5px;padding:4px 9px">aquec · 4 placas</span>
+  <span class="tag tag-neutral" style="font-size:11.5px;padding:4px 9px">6 placas × 10</span>
+  <span class="tag tag-neutral" style="font-size:11.5px;padding:4px 9px">6 placas × 10</span>
+</div>
+<div style="margin-top:auto;padding:0 16px 22px">
+  <div style="font-size:11.5px;color:rgba(29,31,32,.42);margin-bottom:8px">a seguir: Leg Press · 4 placas</div>
+  <div style="display:flex;gap:9px">
+    <button class="btn btn-secondary" style="width:96px;height:104px;border-style:dashed;flex-direction:column;font-family:var(--font-body)"><span style="font-family:var(--font-heading);font-size:15px;letter-spacing:.06em">AQUEC.</span><span style="font-size:10px;opacity:.55">não conta</span></button>
+    <button class="btn btn-primary blueprint" style="flex:1;height:104px;flex-direction:column;font-family:var(--font-body)"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span style="font-family:var(--font-heading);font-size:27px;letter-spacing:.05em">REGISTRAR</span><span style="font-size:12.5px;opacity:.85">6 placas × 10</span></button>
+  </div>
+</div>
+</div></div>
+<p class="dv-onote">Mesma estrutura, ground claro do Industry. O escuro é o padrão (subsolo, noite); o claro existe para o sol da janela do fundo e não muda um pixel de layout.</p>
+</div>
+
+</div>
+<p class="dv-next">Peça o que quiser em cima disso: “fica com o mecanismo de <a class="dv-oid" href="#1c">1c</a> dentro de <a class="dv-oid" href="#1a">1a</a>” · “o resumo de <a class="dv-oid" href="#1a">1a</a> está fraco, refaz” · “quero <a class="dv-oid" href="#1d">1d</a> como segunda visão da execução, alternável”.</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;mao&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;destro&quot;,&quot;canhoto&quot;],&quot;default&quot;:&quot;destro&quot;,&quot;tsType&quot;:&quot;'destro' | 'canhoto'&quot;,&quot;section&quot;:&quot;Contexto físico&quot;},&quot;mostrarProcedencia&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Contexto físico&quot;},&quot;descansoVisivel&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Contexto físico&quot;}}">
+class Component extends DCLogic {
+  state = {
+    tela: 'hoje', sheet: null, hoje: 'limpa', treino: 'B',
+    feitas: null, ajuste: null, ajusteReps: null,
+    ultima: Date.now() - 43000, agora: Date.now(),
+    voando: false, vooId: 0, vooTexto: '',
+    fichaOk: null, abaHist: 'sessoes', exSel: null, calibrado: false,
+    corpoDemo: false, digitado: ''
+  };
+
+  componentDidMount() {
+    this.setState({ feitas: this.feitasIniciais() });
+    this.tick = setInterval(() => this.setState({ agora: Date.now() }), 1000);
+  }
+  componentWillUnmount() { clearInterval(this.tick); if (this.vooT) clearTimeout(this.vooT); }
+
+  ex() {
+    return {
+      slp: { nome: 'Seated Leg Press', modo: 'carga', incr: 2500 },
+      smi: { nome: 'Smith Press', modo: 'carga', incr: 1000 },
+      ext: { nome: 'Cadeira Extensora', modo: 'carga', incr: 1 },
+      flx: { nome: 'Cadeira Flexora', modo: 'carga', incr: 1 },
+      lgp: { nome: 'Leg Press', modo: 'carga', incr: 1, gpp: 5000 },
+      pan: { nome: 'Panturrilha', modo: 'carga', incr: 2500 },
+      abu: { nome: 'Cadeira Abdutora', modo: 'carga', incr: 1 },
+      est: { nome: 'Esteira', modo: 'tempo', incr: 60 },
+      abs: { nome: 'Abdominal Infra Solo', modo: 'corpo', incr: 1 },
+      rem: { nome: 'Remada Alta c/ Barra', modo: 'carga', incr: 1 },
+      rba: { nome: 'Remada Baixa c/ Barra', modo: 'carga', incr: 1 },
+      pkd: { nome: 'Peck Dorsal', modo: 'carga', incr: 1 },
+      fcp: { nome: 'Facepull', modo: 'carga', incr: 1 },
+      rmp: { nome: 'Rosca Martelo Polia', modo: 'carga', incr: 2500 },
+      rdp: { nome: 'Rosca Direta Polia', modo: 'carga', incr: 1 },
+      elv: { nome: 'Elevação Lateral c/ Halter', modo: 'carga', incr: 1000 },
+      asu: { nome: 'Abdominal Supra Solo', modo: 'corpo', incr: 1 },
+      sup: { nome: 'Supino Inclinado Barra', modo: 'carga', incr: 2500 },
+      spm: { nome: 'Supino Máquina', modo: 'carga', incr: 1 },
+      pkk: { nome: 'Peck Deck', modo: 'carga', incr: 1 },
+      par: { nome: 'Paralela Articulada', modo: 'carga', incr: 1 },
+      dsv: { nome: 'Desenvolvimento Articulado', modo: 'carga', incr: 1 },
+      efr: { nome: 'Elevação Frontal c/ Halteres', modo: 'carga', incr: 1000 },
+      tfr: { nome: 'Tríceps Francês Halter', modo: 'carga', incr: 1000 }
+    };
+  }
+  ficha() {
+    const kg = (v) => ({ un: 'kg', v }), pl = (v) => ({ un: 'placa', v });
+    if (this.state.treino === 'A') return [
+      { id: 'rem', series: 4, reps: 10, carga: pl(5) },
+      { id: 'rba', series: 4, reps: 10, carga: pl(5) },
+      { id: 'pkd', series: 4, reps: 10, carga: pl(4) },
+      { id: 'fcp', series: 3, reps: 10, carga: pl(2) },
+      { id: 'rmp', series: 4, reps: 10, carga: kg(5000) },
+      { id: 'rdp', series: 4, reps: 10, carga: pl(3) },
+      { id: 'elv', series: 4, reps: 12, carga: kg(5000) },
+      { id: 'asu', series: 4, reps: 12, carga: null }
+    ];
+    if (this.state.treino === 'C') return [
+      { id: 'sup', series: 4, reps: 10, carga: kg(10000) },
+      { id: 'spm', series: 4, reps: 10, carga: pl(6) },
+      { id: 'pkk', series: 4, reps: 10, carga: pl(5) },
+      { id: 'par', series: 4, reps: 10, carga: pl(4) },
+      { id: 'dsv', series: 4, reps: 10, carga: pl(2) },
+      { id: 'efr', series: 4, reps: 12, carga: kg(4000) },
+      { id: 'tfr', series: 4, reps: 10, carga: kg(6000) },
+      { id: 'abs', series: 4, reps: 12, carga: null }
+    ];
+    return [
+      { id: 'slp', series: 4, reps: 10, carga: kg(20000) },
+      { id: 'smi', series: 4, reps: 10, carga: kg(14000) },
+      { id: 'ext', series: 4, reps: 10, carga: pl(6) },
+      { id: 'flx', series: 4, reps: 10, carga: pl(5) },
+      { id: 'lgp', series: 4, reps: 10, carga: pl(4) },
+      { id: 'pan', series: 4, reps: 10, carga: kg(20000) },
+      { id: 'abu', series: 4, reps: 10, carga: pl(3) },
+      { id: 'est', series: 1, reps: null, carga: null, dur: 600 },
+      { id: 'abs', series: 0, reps: 12, carga: null }
+    ];
+  }
+  anteriores() {
+    const kg = (v) => ({ un: 'kg', v }), pl = (v) => ({ un: 'placa', v });
+    if (this.state.treino !== 'B') return {};
+    return { slp: kg(20000), smi: kg(14000), ext: pl(6), flx: pl(6), lgp: pl(4), pan: kg(20000), abu: pl(3) };
+  }
+  feitasDe(t) { return t === 'B' ? this.feitasIniciais() : {}; }
+  feitasIniciais() {
+    const kg = (v) => ({ un: 'kg', v }), pl = (v) => ({ un: 'placa', v });
+    const n = (q, carga, reps) => Array.from({ length: q }, (_, k) => ({ i: k + 1, tipo: 'valida', carga, reps }));
+    return {
+      slp: n(4, kg(20000), 10), smi: n(4, kg(14000), 10), ext: n(5, pl(6), 10),
+      flx: [{ i: 1, tipo: 'aquecimento', carga: pl(4), reps: 10 }, { i: 2, tipo: 'valida', carga: pl(6), reps: 10 }, { i: 3, tipo: 'valida', carga: pl(6), reps: 10 }],
+      lgp: [], pan: [], abu: [], est: [], abs: [{ i: 1, tipo: 'valida', carga: null, reps: 12 }]
+    };
+  }
+
+  num(n) { return n.toLocaleString('pt-BR', { maximumFractionDigits: 1 }); }
+  numCarga(c) { return c.un === 'placa' ? String(c.v) : this.num(c.v / 1000); }
+  rotUn(c) { return c.un === 'placa' ? (c.v === 1 ? 'placa' : 'placas') : 'kg'; }
+  fmtCarga(c) { return c ? this.numCarga(c) + ' ' + this.rotUn(c) : 'peso corporal'; }
+
+  itens() {
+    const ex = this.ex(), f = this.state.feitas || this.feitasIniciais();
+    return this.ficha().map((it) => {
+      const e = ex[it.id], fe = f[it.id] || [];
+      const contam = fe.filter((s) => s.tipo !== 'aquecimento').length;
+      const faltam = it.series > 0 ? Math.max(0, it.series - contam) : 0;
+      return { ...it, e, fe, contam, faltam, completo: it.series > 0 ? faltam === 0 : fe.length > 0 };
+    });
+  }
+  atual() {
+    const its = this.itens();
+    return its.find((i) => i.series > 0 && i.faltam > 0) || its.find((i) => !i.completo) || its[its.length - 1];
+  }
+  sugestao(it) {
+    const aj = this.state.ajuste;
+    if (it.e.modo === 'tempo') {
+      const dur = aj && aj.id === it.id ? aj.v : it.dur;
+      return { modo: 'tempo', dur, origem: aj && aj.id === it.id ? 'ajuste_de_hoje' : 'plano' };
+    }
+    if (it.e.modo === 'corpo') {
+      const reps = this.state.ajusteReps != null ? this.state.ajusteReps : it.reps;
+      return { modo: 'corpo', carga: null, reps, origem: 'plano' };
+    }
+    const ult = it.fe.filter((s) => s.tipo !== 'aquecimento').slice(-1)[0];
+    const ant = this.anteriores()[it.id];
+    let carga = null, origem = 'sem_referencia';
+    if (aj && aj.id === it.id) { carga = { un: aj.un, v: aj.v }; origem = 'ajuste_de_hoje'; }
+    else if (ult && ult.carga) {
+      carga = ult.carga;
+      origem = ant && ant.un === carga.un && ant.v === carga.v ? 'mesmo_indice_sessao_anterior' : 'ajuste_de_hoje';
+    }
+    else if (ant) { carga = ant; origem = 'mesmo_indice_sessao_anterior'; }
+    else if (it.carga) { carga = it.carga; origem = 'plano'; }
+    const reps = this.state.ajusteReps != null ? this.state.ajusteReps : it.reps;
+    return { modo: 'carga', carga, reps, origem };
+  }
+  palavraOrigem(o) {
+    return { ajuste_de_hoje: 'o que você fez hoje', mesmo_indice_sessao_anterior: 'igual à semana passada', plano: 'da ficha', sem_referencia: 'primeira vez — informe a carga' }[o];
+  }
+
+  passo(dir) {
+    const it = this.atual(), s = this.sugestao(it);
+    if (s.modo === 'tempo') { this.setState({ ajuste: { id: it.id, v: Math.max(60, (s.dur || 600) + dir * it.e.incr) } }); return; }
+    if (s.modo === 'corpo') { this.setState({ ajusteReps: Math.max(1, (s.reps || 12) + dir) }); return; }
+    if (!s.carga) { this.setState({ sheet: 'teclado', digitado: '' }); return; }
+    const un = s.carga.un, passo = un === 'placa' ? 1 : it.e.incr;
+    const v = Math.max(passo, s.carga.v + dir * passo);
+    this.setState({ ajuste: { id: it.id, un, v } });
+  }
+  passoReps(dir) {
+    const it = this.atual(), s = this.sugestao(it);
+    this.setState({ ajusteReps: Math.max(1, (s.reps || 10) + dir) });
+  }
+  grava(tipo) {
+    const it = this.atual(), s = this.sugestao(it);
+    const f = { ...(this.state.feitas || this.feitasIniciais()) };
+    const arr = (f[it.id] || []).slice();
+    arr.push({ i: arr.length + 1, tipo, carga: s.carga || null, reps: s.reps || null, dur: s.dur || null });
+    f[it.id] = arr;
+    const texto = s.modo === 'tempo' ? Math.round(s.dur / 60) + '' : (s.carga ? this.numCarga(s.carga) : String(s.reps));
+    this.setState({ feitas: f, ajuste: null, ajusteReps: null, ultima: Date.now(), voando: true, vooId: this.state.vooId + 1, vooTexto: texto });
+    if (this.vooT) clearTimeout(this.vooT);
+    this.vooT = setTimeout(() => this.setState({ voando: false }), 520);
+  }
+  comecar(t) {
+    this.setState({ treino: t, feitas: this.feitasDe(t), tela: 'exec', ajuste: null, ajusteReps: null, ultima: Date.now() - 91000 });
+  }
+  desfaz() {
+    const its = this.itens(), f = { ...(this.state.feitas || this.feitasIniciais()) };
+    const alvo = this.atual();
+    let id = (f[alvo.id] || []).length ? alvo.id : null;
+    if (!id) { const idx = its.findIndex((i) => i.id === alvo.id); for (let k = idx - 1; k >= 0; k--) { if ((f[its[k].id] || []).length) { id = its[k].id; break; } } }
+    if (!id) return;
+    f[id] = f[id].slice(0, -1);
+    this.setState({ feitas: f, ajuste: null, ajusteReps: null });
+  }
+
+  renderVals() {
+    const st = this.state, t = st.tela;
+    const it = this.atual(), s = this.sugestao(it);
+    const its = this.itens();
+    const feitasTotal = its.reduce((a, i) => a + i.contam, 0);
+    const alvoTotal = its.reduce((a, i) => a + i.series, 0);
+    const restaMs = Math.max(0, st.ultima + 90000 - st.agora);
+    const mm = Math.floor(restaMs / 60000), ss = Math.floor((restaMs % 60000) / 1000);
+    const mao = this.props.mao === 'canhoto' ? 'canhoto' : 'destro';
+    const proc = this.props.mostrarProcedencia !== false;
+    const desc = this.props.descansoVisivel !== false;
+
+    const numero = s.modo === 'tempo' ? String(Math.round(s.dur / 60)) : (s.modo === 'corpo' ? String(s.reps) : (s.carga ? this.numCarga(s.carga) : '—'));
+    const unidade = s.modo === 'tempo' ? 'minutos' : (s.modo === 'corpo' ? 'repetições · peso corporal' : (s.carga ? this.rotUn(s.carga) : 'informe a carga'));
+    const posicao = it.series === 0 ? 'fora da ficha · ' + (it.fe.length + 1) + 'ª' : (it.contam + 1) + 'ª de ' + it.series;
+    const gpp = it.e.gpp;
+    const resumoBotao = s.modo === 'tempo' ? Math.round(s.dur / 60) + ' min' : (s.modo === 'corpo' ? s.reps + ' reps · peso corporal' : (s.carga ? this.fmtCarga(s.carga) + ' × ' + s.reps : 'informe a carga'));
+
+    const idxAtual = its.findIndex((i) => i.id === it.id);
+    const trilha = its.map((i, k) => ({ cor: i.completo ? '#5980a6' : (k === idxAtual ? '#94bce3' : 'rgba(241,241,242,.14)') }));
+    const chips = it.fe.map((f) => ({
+      texto: f.tipo === 'aquecimento' ? 'aquec · ' + this.fmtCarga(f.carga) : (f.dur ? Math.round(f.dur / 60) + ' min' : this.fmtCarga(f.carga) + ' × ' + f.reps),
+      fundo: f.tipo === 'aquecimento' ? 'transparent' : 'rgba(241,241,242,.08)',
+      cor: f.tipo === 'aquecimento' ? 'rgba(241,241,242,.55)' : '#f1f1f2',
+      borda: f.tipo === 'aquecimento' ? 'rgba(241,241,242,.35)' : 'transparent'
+    }));
+    const prox = its[idxAtual + 1];
+
+    const seis = ['24/6', '1/7', '8/7', '22/7', '5/8', '12/8'];
+    const DET = {
+      ext: { nome: 'Cadeira Extensora', sub: 'medido em placa · 6 sessões · 23 séries', un: 'pl', convite: true,
+        eixo: 'carga por sessão, em placas — um ponto por dia, aquecimento fora',
+        val: [4, 4, 5, 5, 6, 6], datas: seis,
+        rec: [{ rotulo: 'Maior carga', valor: '6 placas' }, { rotulo: 'Maior volume em uma sessão', valor: '108 placa·rep' }, { rotulo: 'Mais repetições', valor: '12 · com 5 placas' }, { rotulo: '1RM estimado', valor: 'não existe em placa', fraco: true }, { rotulo: 'Séries no total', valor: '23' }] },
+      flx: { nome: 'Cadeira Flexora', sub: 'medido em placa · 6 sessões · 22 séries', un: 'pl', convite: true,
+        eixo: 'carga por sessão, em placas — um ponto por dia, aquecimento fora',
+        val: [5, 5, 5, 6, 6, 6], datas: seis,
+        rec: [{ rotulo: 'Maior carga', valor: '6 placas' }, { rotulo: 'Maior volume em uma sessão', valor: '96 placa·rep' }, { rotulo: 'Mais repetições', valor: '10 · com 6 placas' }, { rotulo: '1RM estimado', valor: 'não existe em placa', fraco: true }, { rotulo: 'Séries no total', valor: '22' }] },
+      est: { nome: 'Esteira', sub: 'medido em tempo · 4 sessões', un: 'min', convite: false,
+        eixo: 'duração por sessão, em minutos — aqui a grandeza que progride é o segundo',
+        val: [8, 10, 10, 12], datas: ['22/7', '5/8', '10/8', '12/8'],
+        rec: [{ rotulo: 'Maior duração', valor: '12 min' }, { rotulo: 'Tempo somado', valor: '40 min' }, { rotulo: 'Volume', valor: 'não se soma: sem carga e sem repetição', fraco: true }] },
+      abs: { nome: 'Abdominal Supra Solo', sub: 'peso corporal · 9 sessões', un: 'reps', convite: false,
+        eixo: 'repetições por sessão — em peso corporal é a repetição que progride',
+        val: [36, 40, 44, 44, 48, 48], datas: seis,
+        rec: [{ rotulo: 'Mais repetições em uma série', valor: '14' }, { rotulo: 'Mais repetições no dia', valor: '48' }, { rotulo: 'Maior carga', valor: 'carga nula: peso corporal', fraco: true }] },
+      pan: { nome: 'Panturrilha', sub: 'medido em kg · degrau de 2,5 kg', umPonto: true, convite: false, un: 'kg',
+        rec: [{ rotulo: 'Maior carga', valor: '20 kg' }, { rotulo: '1RM estimado', valor: '~26,7 kg' }, { rotulo: 'Séries no total', valor: '4' }] },
+      fcp: { nome: 'Facepull', sub: 'medido em placa · degrau de 1 placa', vazio: true, convite: false, un: 'pl', rec: [] }
+    };
+    const d = DET[st.exSel] || DET.ext;
+    const vv = d.val || [];
+    const lo = vv.length ? Math.min(...vv) - ((Math.max(...vv) - Math.min(...vv)) || 1) * 0.5 : 0;
+    const hi = vv.length ? Math.max(...vv) + ((Math.max(...vv) - Math.min(...vv)) || 1) * 0.5 : 1;
+    const px = (k) => (vv.length > 1 ? 40 + (k * 300) / (vv.length - 1) : 190);
+    const py = (v) => 128 - ((v - lo) / (hi - lo)) * 108;
+    const pontos = vv.map((v, k) => ({ x: px(k) - 3.5, y: py(v) - 3.5, left: px(k) + 'px', data: d.datas[k] }));
+    const linha = vv.map((v, k) => px(k) + ',' + py(v)).join(' ');
+    const grade = vv.length ? [Math.min(...vv), (Math.min(...vv) + Math.max(...vv)) / 2, Math.max(...vv)].map((v) => ({ y: py(v), top: (py(v) - 8) + 'px', rotulo: this.num(v) + ' ' + d.un })) : [];
+
+    const detCal = st.calibrado;
+    const cor = (a) => (t === a ? '#94bce3' : 'rgba(241,241,242,.5)');
+    const teclas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', '←'].map((k) => ({ t: k, tocar: () => this.setState({ digitado: k === '←' ? st.digitado.slice(0, -1) : st.digitado + k }) }));
+
+    return {
+      relogio: '19:07', diaDaSemana: 'Segunda-feira, 17 de agosto',
+      telaHoje: t === 'hoje', telaExec: t === 'exec', telaResumo: t === 'resumo', telaHist: t === 'hist',
+      telaCorpo: t === 'corpo', telaFicha: t === 'ficha', telaAjustes: t === 'ajustes', telaBackup: t === 'backup',
+      barra: t === 'hoje' || t === 'hist' || t === 'corpo' || t === 'ajustes',
+      corHoje: cor('hoje'), corHist: cor('hist'), corCorpo: cor('corpo'), corAjustes: cor('ajustes'),
+      irHoje: () => this.setState({ tela: 'hoje' }), irHist: () => this.setState({ tela: 'hist', exSel: null, abaHist: 'sessoes' }),
+      irCorpo: () => this.setState({ tela: 'corpo' }), irAjustes: () => this.setState({ tela: 'ajustes' }),
+      irFicha: () => this.setState({ tela: 'ficha' }), irBackup: () => this.setState({ tela: 'backup' }),
+
+      hojeLimpa: st.hoje === 'limpa', hojeAberta: st.hoje === 'hoje', hojeOntem: st.hoje === 'ontem',
+      abertaNome: 'Treino B — Pernas', abertaMeta: '16 séries registradas · começou às 18:42',
+      estadoLimpa: () => this.setState({ hoje: 'limpa' }), estadoHoje: () => this.setState({ hoje: 'hoje' }), estadoOntem: () => this.setState({ hoje: 'ontem' }),
+      corEstado1: st.hoje === 'limpa' ? '#94bce3' : 'rgba(241,241,242,.3)',
+      corEstado2: st.hoje === 'hoje' ? '#94bce3' : 'rgba(241,241,242,.3)',
+      corEstado3: st.hoje === 'ontem' ? '#94bce3' : 'rgba(241,241,242,.3)',
+      retomar: () => this.setState({ tela: 'exec', treino: 'B', feitas: this.feitasIniciais() }),
+      fecharOntem: () => this.setState({ hoje: 'limpa' }),
+      treinos: [
+        { letra: 'Treino A', grupos: 'Costas, bíceps e ombros', conta: '8 exercícios · 31 séries', quando: 'há 5 dias', tocar: () => this.comecar('A') },
+        { letra: 'Treino B', grupos: 'Pernas', conta: '8 exercícios · 29 séries', quando: 'há 3 dias', tocar: () => this.comecar('B') },
+        { letra: 'Treino C', grupos: 'Peito, ombros e tríceps', conta: '8 exercícios · 32 séries', quando: 'ontem', tocar: () => this.comecar('C') }
+      ],
+
+      sessaoNome: st.treino === 'B' ? 'Treino B — Pernas' : 'Treino ' + st.treino,
+      contagem: feitasTotal + ' de ' + alvoTotal + ' séries',
+      trilha, atualNome: it.e.nome, atualPosicao: posicao,
+      atualProcedencia: proc && s.modo === 'carga' ? this.palavraOrigem(s.origem) : (s.modo === 'tempo' ? 'da ficha' : 'peso corporal'),
+      atualDescanso: desc ? (restaMs > 0 ? '· descanso ' + mm + ':' + String(ss).padStart(2, '0') : '· descanso concluído') : '',
+      atualNumero: numero, atualUnidade: unidade,
+      atualAprox: gpp && s.carga && s.carga.un === 'placa' ? '≈ ' + this.num((s.carga.v * gpp) / 1000) + ' kg — calibrada em 5 kg/placa, leitura aproximada' : '',
+      temReps: s.modo === 'carga', atualReps: s.reps, atualRepsAlvo: 'alvo ' + (it.reps || '—'),
+      direcao: mao === 'canhoto' ? 'row-reverse' : 'row', alinhamento: 'center',
+      menos: () => this.passo(-1), mais: () => this.passo(1), menosReps: () => this.passoReps(-1), maisReps: () => this.passoReps(1),
+      registrar: () => this.grava('valida'), registrarAquec: () => this.grava('aquecimento'),
+      botaoResumo: resumoBotao, chips, podeDesfazer: it.fe.length > 0, desfazer: () => this.desfaz(),
+      aSeguir: prox ? 'a seguir: ' + prox.e.nome + (prox.carga ? ' · ' + this.fmtCarga(prox.carga) : '') : 'último exercício do treino',
+      voo: st.voando ? React.createElement('div', { key: 'v' + st.vooId, style: { position: 'absolute', left: '150px', top: '250px', fontFamily: 'var(--font-heading)', fontSize: '88px', lineHeight: '.86', color: '#94bce3', pointerEvents: 'none', animation: 'voa 500ms cubic-bezier(.4,0,.2,1) forwards' } }, st.vooTexto) : null,
+      pedirFinalizar: () => this.setState({ sheet: 'finalizar' }),
+      textoFinalizar: alvoTotal - feitasTotal > 0 ? 'Faltam ' + (alvoTotal - feitasTotal) + ' séries do plano. A sessão fecha com o que foi registrado — nada é preenchido por você.' : 'Todas as séries do plano foram registradas.',
+      finalizar: () => this.setState({ tela: 'resumo', sheet: null }),
+
+      volumeTexto: '~2.960 kg·rep',
+      foraDaSoma: [
+        { nome: 'Esteira', motivo: '10 min, sem carga' },
+        { nome: 'Abdominal Infra Solo', motivo: 'peso corporal' },
+        { nome: 'Cadeira Extensora · Flexora · Abdutora', motivo: 'placa sem calibração' },
+        { nome: 'Cadeira Flexora, 1ª série', motivo: 'aquecimento' }
+      ],
+      fichaOk: st.fichaOk === true, fichaPendente: st.fichaOk === null,
+      atualizarFicha: () => this.setState({ fichaOk: true }), manterFicha: () => this.setState({ fichaOk: false }),
+      concluir: () => this.setState({ tela: 'hoje', hoje: 'limpa', treino: 'B', feitas: this.feitasIniciais(), fichaOk: null }),
+
+      abaSessoes: () => this.setState({ abaHist: 'sessoes', exSel: null }), abaExercicios: () => this.setState({ abaHist: 'ex' }),
+      fundoAbaS: st.abaHist === 'sessoes' ? '#94bce3' : 'transparent', corAbaS: st.abaHist === 'sessoes' ? '#191b1d' : 'rgba(241,241,242,.6)',
+      fundoAbaE: st.abaHist === 'ex' ? '#94bce3' : 'transparent', corAbaE: st.abaHist === 'ex' ? '#191b1d' : 'rgba(241,241,242,.6)',
+      verSessoes: st.abaHist === 'sessoes', verLista: st.abaHist === 'ex' && !st.exSel, verDetalhe: st.abaHist === 'ex' && !!st.exSel,
+      sessoes: [
+        { nome: 'Treino B — Pernas', data: 'hoje, 19:41', meta: '22 séries · ~2.960 kg·rep' },
+        { nome: 'Treino A — Costas, bíceps e ombros', data: 'sex, 14/8', meta: '31 séries · 1.240 kg·rep' },
+        { nome: 'Treino C — Peito, ombros e tríceps', data: 'qua, 12/8', meta: '30 séries · 2.180 kg·rep' },
+        { nome: 'Treino B — Pernas', data: 'seg, 10/8', meta: '29 séries · ~2.870 kg·rep' },
+        { nome: 'Treino A — Costas, bíceps e ombros', data: 'sex, 7/8', meta: '30 séries · 1.190 kg·rep' },
+        { nome: 'Treino C — Peito, ombros e tríceps', data: 'qua, 5/8', meta: '31 séries · 2.140 kg·rep' }
+      ],
+      exLista: [
+        { nome: 'Cadeira Extensora', meta: '6 placas', sub: '6 sessões · última hoje', corMeta: '#94bce3', tocar: () => this.setState({ exSel: 'ext' }) },
+        { nome: 'Cadeira Flexora', meta: '6 placas', sub: '6 sessões · última hoje', corMeta: '#94bce3', tocar: () => this.setState({ exSel: 'flx' }) },
+        { nome: 'Panturrilha', meta: '20 kg', sub: '1 sessão · hoje', corMeta: '#94bce3', tocar: () => this.setState({ exSel: 'pan' }) },
+        { nome: 'Esteira', meta: '10 min', sub: '4 sessões · última hoje', corMeta: 'rgba(241,241,242,.45)', tocar: () => this.setState({ exSel: 'est' }) },
+        { nome: 'Facepull', meta: '—', sub: 'nunca registrado · está na ficha A', corMeta: 'rgba(241,241,242,.35)', tocar: () => this.setState({ exSel: 'fcp' }) },
+        { nome: 'Abdominal Supra Solo', meta: '12 reps', sub: '9 sessões · última sex', corMeta: 'rgba(241,241,242,.45)', tocar: () => this.setState({ exSel: 'abs' }) }
+      ],
+      voltarLista: () => this.setState({ exSel: null }),
+      detNome: d.nome, detSub: d.sub,
+      detTemCurva: !!d.val, detUmPonto: !!d.umPonto, detVazio: !!d.vazio,
+      detEixo: d.eixo, pontos, linha, grade,
+      detTemRecordes: d.rec.length > 0,
+      detRecordes: d.rec.map((r) => ({ rotulo: r.rotulo, valor: r.valor, cor: r.fraco ? 'rgba(241,241,242,.45)' : '#f1f1f2' })),
+      detConvite: d.convite && !detCal, detCalibrado: d.convite && detCal,
+      abrirCalibrar: () => this.setState({ sheet: 'calibrar' }),
+      opcoesPlaca: [2500, 5000, 7500, 10000].map((g) => ({ t: this.num(g / 1000) + ' kg', tocar: () => this.setState({ calibrado: true, sheet: null }) })),
+      descalibrar: () => this.setState({ calibrado: false, sheet: null }),
+
+      corpoVazio: !st.corpoDemo, corpoCheio: st.corpoDemo,
+      ligarDemo: () => this.setState({ corpoDemo: true }), desligarDemo: () => this.setState({ corpoDemo: false }),
+
+      fichaItens: [
+        { n: '1', nome: 'Supino Inclinado Barra', alvo: '4×10 · 10 kg' },
+        { n: '2', nome: 'Supino Máquina', alvo: '4×10 · 6 placas' },
+        { n: '3', nome: 'Peck Deck', alvo: '4×10 · 5 placas' },
+        { n: '4', nome: 'Paralela Articulada', alvo: '4×10 · 4 placas' },
+        { n: '5', nome: 'Desenvolvimento Articulado', alvo: '4×10 · 2 placas' },
+        { n: '6', nome: 'Elevação Frontal c/ Halteres', alvo: '4×12 · 4 kg' },
+        { n: '7', nome: 'Tríceps Francês Halter', alvo: '4×10 · 6 kg' },
+        { n: '8', nome: 'Abdominal Infra Solo', alvo: '4×12 · peso corporal' }
+      ],
+      abrirItem: () => this.setState({ sheet: 'item' }), abrirCatalogo: () => this.setState({ sheet: 'catalogo' }),
+      catalogo: [
+        { nome: 'Crucifixo Máquina', tipo: 'placa' }, { nome: 'Tríceps Corda', tipo: 'placa' },
+        { nome: 'Rosca Scott', tipo: 'kg' }, { nome: 'Prancha', tipo: 'tempo' }
+      ],
+      abrirRestaurar: () => this.setState({ sheet: 'restaurar' }),
+      sheetTeclado: st.sheet === 'teclado', sheetFinalizar: st.sheet === 'finalizar', sheetCalibrar: st.sheet === 'calibrar',
+      sheetItem: st.sheet === 'item', sheetCatalogo: st.sheet === 'catalogo', sheetRestaurar: st.sheet === 'restaurar',
+      fecharSheet: () => this.setState({ sheet: null }),
+      digitado: st.digitado || '0', teclas,
+      usarDigitado: () => {
+        const v = parseFloat((st.digitado || '0').replace(',', '.')) || 0;
+        const a = this.atual(), sg = this.sugestao(a);
+        const un = sg.carga ? sg.carga.un : (a.carga ? a.carga.un : 'kg');
+        this.setState({ ajuste: { id: a.id, un, v: un === 'placa' ? Math.max(1, Math.round(v)) : Math.round(v * 1000) }, sheet: null, digitado: '' });
+      },
+
+      listaCompleta: [
+        { nome: 'Seated Leg Press', alvo: '4×10 · 20 kg', feitas: 4, alvoN: 4 },
+        { nome: 'Smith Press', alvo: '4×10 · 14 kg', feitas: 4, alvoN: 4 },
+        { nome: 'Cadeira Extensora', alvo: '4×10 · 6 placas · 1 extra', feitas: 5, alvoN: 4 },
+        { nome: 'Cadeira Flexora', alvo: '4×10 · 6 placas · em andamento', feitas: 2, alvoN: 4, ativo: true },
+        { nome: 'Leg Press', alvo: '4×10 · 4 placas (~20 kg)', feitas: 0, alvoN: 4 },
+        { nome: 'Panturrilha', alvo: '4×10 · 20 kg', feitas: 0, alvoN: 4 },
+        { nome: 'Cadeira Abdutora', alvo: '4×10 · 3 placas', feitas: 0, alvoN: 4 },
+        { nome: 'Esteira', alvo: '10 min · sem carga, sem repetição', feitas: 0, alvoN: 1 },
+        { nome: 'Abdominal Infra Solo', alvo: 'fora da ficha · 12 reps, peso corporal', feitas: 1, alvoN: 0 }
+      ].map((l) => ({
+        nome: l.nome, alvo: l.alvo,
+        fundo: l.ativo ? 'rgba(148,188,227,.1)' : 'transparent',
+        corNome: l.ativo ? '#94bce3' : '#f1f1f2',
+        dots: Array.from({ length: Math.max(l.alvoN, l.feitas) || 1 }, (_, k) => ({
+          fundo: k < l.feitas ? '#94bce3' : 'transparent',
+          borda: k < l.feitas ? '#94bce3' : 'rgba(241,241,242,.3)'
+        }))
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

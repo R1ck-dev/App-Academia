@@ -28,6 +28,7 @@ import {
   obterPerfil,
   planoDaSessao,
   preferencia,
+  resumoDosTreinos,
   seriesDaSessao,
   seriesDaSessaoComExercicio,
   seriesDoExercicio,
@@ -111,7 +112,7 @@ function serie(d: {
   return d.id;
 }
 
-function treino(d: { id: string; nome: string; ordem?: number }) {
+function treino(d: { id: string; nome: string; ordem?: number; descricao?: string; arquivadoEm?: number }) {
   db.insert(treinos)
     .values({ criadoEm: T, atualizadoEm: T, ...d })
     .run();
@@ -540,5 +541,85 @@ describe('corpo e preferências', () => {
 
     assert.equal(preferencia('seed_versao'), '1');
     assert.equal(preferencia('ultimo_treino'), undefined);
+  });
+});
+
+describe('resumoDosTreinos', () => {
+  it('conta os exercícios da ficha e devolve a descrição', () => {
+    exercicio({ id: 'ex-1', nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex-2', nome: 'Facepull', tipoMedicao: 'carga_placa' });
+    treino({ id: 'tr-a', nome: 'Treino A', ordem: 0, descricao: 'Costas e bíceps' });
+    treino({ id: 'tr-b', nome: 'Treino B', ordem: 1, descricao: 'Pernas' });
+    item({ id: 'it-1', treinoId: 'tr-a', exercicioId: 'ex-1', ordem: 0 });
+    item({ id: 'it-2', treinoId: 'tr-a', exercicioId: 'ex-2', ordem: 1 });
+    item({ id: 'it-3', treinoId: 'tr-b', exercicioId: 'ex-1', ordem: 0 });
+
+    assert.deepEqual(
+      resumoDosTreinos().map((r) => [r.nome, r.exercicios, r.descricao]),
+      [
+        ['Treino A', 2, 'Costas e bíceps'],
+        ['Treino B', 1, 'Pernas'],
+      ]
+    );
+  });
+
+  it('ficha sem exercício conta zero e NÃO some da lista', () => {
+    treino({ id: 'tr-a', nome: 'Treino A', ordem: 0 });
+    assert.deepEqual(
+      resumoDosTreinos().map((r) => [r.nome, r.exercicios]),
+      [['Treino A', 0]]
+    );
+  });
+
+  it('item e exercício arquivados saem da contagem: a ficha mostra o que dá para fazer hoje', () => {
+    exercicio({ id: 'ex-1', nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex-2', nome: 'Facepull', tipoMedicao: 'carga_placa', arquivadoEm: T });
+    exercicio({ id: 'ex-3', nome: 'Remada', tipoMedicao: 'carga_placa' });
+    treino({ id: 'tr-a', nome: 'Treino A', ordem: 0 });
+    item({ id: 'it-1', treinoId: 'tr-a', exercicioId: 'ex-1', ordem: 0 });
+    item({ id: 'it-2', treinoId: 'tr-a', exercicioId: 'ex-2', ordem: 1 });
+    item({ id: 'it-3', treinoId: 'tr-a', exercicioId: 'ex-3', ordem: 2, arquivadoEm: T });
+
+    assert.equal(resumoDosTreinos()[0].exercicios, 1);
+  });
+
+  it('treino arquivado não aparece', () => {
+    treino({ id: 'tr-a', nome: 'Treino A', ordem: 0 });
+    treino({ id: 'tr-z', nome: 'Treino antigo', ordem: 1, arquivadoEm: T });
+    assert.deepEqual(
+      resumoDosTreinos().map((r) => r.nome),
+      ['Treino A']
+    );
+  });
+
+  it('devolve o início da sessão MAIS RECENTE, e null para a ficha nunca feita', () => {
+    treino({ id: 'tr-a', nome: 'Treino A', ordem: 0 });
+    treino({ id: 'tr-b', nome: 'Treino B', ordem: 1 });
+    sessao({ id: 's-1', nome: 'Treino A', treinoId: 'tr-a', iniciadaEm: T, finalizadaEm: T + 90 * MIN });
+    sessao({
+      id: 's-2',
+      nome: 'Treino A',
+      treinoId: 'tr-a',
+      iniciadaEm: T + 7 * DIA,
+      finalizadaEm: T + 7 * DIA + 90 * MIN,
+    });
+
+    const resumo = resumoDosTreinos();
+    assert.equal(resumo[0].ultimaSessaoEm, T + 7 * DIA);
+    assert.equal(resumo[1].ultimaSessaoEm, null);
+  });
+
+  it('a sessão ainda ABERTA já conta como última vez — é a resposta certa para "quando treinei isto"', () => {
+    treino({ id: 'tr-a', nome: 'Treino A', ordem: 0 });
+    sessao({ id: 's-1', nome: 'Treino A', treinoId: 'tr-a', iniciadaEm: T });
+    assert.equal(resumoDosTreinos()[0].ultimaSessaoEm, T);
+  });
+
+  it('sessão arquivada não conta, e sessão avulsa (sem ficha) não estraga nada', () => {
+    treino({ id: 'tr-a', nome: 'Treino A', ordem: 0 });
+    sessao({ id: 's-1', nome: 'Treino A', treinoId: 'tr-a', iniciadaEm: T, arquivadoEm: T });
+    sessao({ id: 's-2', nome: 'Avulsa', iniciadaEm: T + DIA });
+
+    assert.equal(resumoDosTreinos()[0].ultimaSessaoEm, null);
   });
 });
