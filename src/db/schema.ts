@@ -53,6 +53,8 @@ export type ParteCorpo = (typeof PARTES_CORPO)[number];
 /** Contrato das chaves de `preferencias`, num lugar só — string solta em dois arquivos é bug de update. */
 export const PREF_SEED_VERSAO = 'seed_versao';
 export const PREF_ULTIMO_TREINO = 'ultimo_treino';
+/** Instante do último backup exportado — o que a abertura do app usa no aviso. */
+export const PREF_ULTIMO_BACKUP = 'ultimo_backup';
 
 const id = () => text('id').primaryKey();
 const criadoEm = () => integer('criado_em').notNull();

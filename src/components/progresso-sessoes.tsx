@@ -10,7 +10,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Aviso, ItemLista } from '@/components/progresso-base';
-import { espacoLegado as espaco } from '@/constants/tema';
+import { espaco, margem } from '@/constants/tema';
 import type { ResumoDeSessao } from '@/db/queries';
 import { formatarVolume } from '@/dominio/carga';
 import { formatarDataComAno, formatarHora } from '@/dominio/datas';
@@ -49,5 +49,5 @@ function textoDoVolume(s: ResumoDeSessao): string {
 }
 
 const estilos = StyleSheet.create({
-  lista: { gap: espaco.xs },
+  lista: { gap: espaco.dois, paddingHorizontal: margem.listaDeCartoes, paddingTop: espaco.dois },
 });

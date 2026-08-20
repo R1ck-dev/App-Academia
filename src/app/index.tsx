@@ -15,6 +15,8 @@ import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { TelaDeBackup } from '@/components/backup-tela';
+import { TelaDaFicha } from '@/components/ficha-tela';
 import { useConsulta } from '@/components/progresso-consulta';
 import { ResumoDaSessao } from '@/components/treino-resumo';
 import { TelaSessao } from '@/components/treino-sessao';
@@ -22,14 +24,41 @@ import { useSeriesDaSessao, useSessaoEmAndamento } from '@/components/treino-dad
 import { letraDoTreino } from '@/components/treino-texto';
 import { alvo, cor, espaco, margem, raio, tipo } from '@/constants/tema';
 import { finalizarSessao, iniciarSessao } from '@/db/mutations';
+import { ultimoBackupEm } from '@/db/exportar';
 import { resumoDosTreinos, type ResumoDeTreino } from '@/db/queries';
 import type { Sessao } from '@/db/schema';
-import { diaLocal, formatarHora, rotuloDeQuandoFoi, rotuloDoDiaLongo } from '@/dominio/datas';
+import {
+  diaLocal,
+  diasEntreDias,
+  formatarHora,
+  rotuloDeQuandoFoi,
+  rotuloDoDiaLongo,
+} from '@/dominio/datas';
+
+type Destino = { tipo: 'backup' } | { tipo: 'ficha'; ficha: ResumoDeTreino } | null;
 
 export default function TreinoDeHoje() {
   const sessao = useSessaoEmAndamento();
   const [resumoDe, setResumoDe] = useState<string | null>(null);
   const [retomada, setRetomada] = useState<string | null>(null);
+  const [destino, setDestino] = useState<Destino>(null);
+
+  // Ficha e backup são as duas telas de "em casa, sentado". Elas vivem DENTRO da
+  // aba Treino, e não como abas próprias, porque uma aba a mais na barra
+  // competiria por espaço com o que ele abre três vezes por semana.
+  if (destino?.tipo === 'backup') {
+    return <TelaDeBackup aoVoltar={() => setDestino(null)} />;
+  }
+  if (destino?.tipo === 'ficha') {
+    return (
+      <TelaDaFicha
+        treinoId={destino.ficha.id}
+        nome={destino.ficha.nome}
+        descricao={destino.ficha.descricao}
+        aoVoltar={() => setDestino(null)}
+      />
+    );
+  }
 
   if (resumoDe !== null) {
     return <ResumoDaSessao sessaoId={resumoDe} aoConcluir={() => setResumoDe(null)} />;
@@ -55,6 +84,8 @@ export default function TreinoDeHoje() {
       esquecida={sessao}
       aoRetomar={() => sessao !== undefined && setRetomada(sessao.id)}
       aoFinalizar={(id) => setResumoDe(id)}
+      aoAbrirBackup={() => setDestino({ tipo: 'backup' })}
+      aoEditarFicha={(ficha) => setDestino({ tipo: 'ficha', ficha })}
     />
   );
 }
@@ -69,12 +100,17 @@ function Abertura({
   esquecida,
   aoRetomar,
   aoFinalizar,
+  aoAbrirBackup,
+  aoEditarFicha,
 }: {
   esquecida: Sessao | undefined;
   aoRetomar: () => void;
   aoFinalizar: (sessaoId: string) => void;
+  aoAbrirBackup: () => void;
+  aoEditarFicha: (ficha: ResumoDeTreino) => void;
 }) {
   const fichas = useConsulta('Abertura', resumoDosTreinos);
+  const ultimoBackup = useConsulta('Abertura:backup', ultimoBackupEm);
   const agora = Date.now();
 
   function iniciar(ficha: ResumoDeTreino) {
@@ -93,7 +129,7 @@ function Abertura({
         <Text style={estilos.titulo}>Bora treinar</Text>
       </View>
 
-      <ScrollView contentContainerStyle={estilos.rolagem}>
+      <ScrollView style={estilos.area} contentContainerStyle={estilos.rolagem}>
         {fichas.length === 0 ? (
           <View style={estilos.vazio}>
             <Text style={estilos.vazioTexto}>Nenhum treino montado ainda.</Text>
@@ -106,6 +142,7 @@ function Abertura({
                 ficha={ficha}
                 agora={agora}
                 aoTocar={() => iniciar(ficha)}
+                aoEditar={() => aoEditarFicha(ficha)}
               />
             ))}
           </View>
@@ -115,6 +152,23 @@ function Abertura({
           <SessaoEsquecida sessao={esquecida} aoRetomar={aoRetomar} aoFinalizar={aoFinalizar} />
         )}
       </ScrollView>
+
+      {/* O lembrete de backup mora AQUI, antes de começar, em uma linha —
+          nunca no resumo do treino e nunca em vermelho. Alarme toda abertura
+          ensina a ignorar alarme. */}
+      <View style={estilos.rodape}>
+        {fichas.length === 0 ? (
+          <View />
+        ) : (
+          <Pressable onPress={() => aoEditarFicha(fichas[0])} hitSlop={10}>
+            <Text style={estilos.rodapeAcao}>Editar fichas</Text>
+          </Pressable>
+        )}
+        <Pressable style={estilos.rodapeBackup} onPress={aoAbrirBackup} hitSlop={10}>
+          <Text style={estilos.rodapeTexto}>{textoDoBackup(ultimoBackup, agora)}</Text>
+          <Text style={estilos.rodapeAcao}>Exportar</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 }
@@ -123,14 +177,22 @@ function CartaoDoTreino({
   ficha,
   agora,
   aoTocar,
+  aoEditar,
 }: {
   ficha: ResumoDeTreino;
   agora: number;
   aoTocar: () => void;
+  aoEditar: () => void;
 }) {
   const exercicios = `${ficha.exercicios} ${ficha.exercicios === 1 ? 'exercício' : 'exercícios'}`;
   return (
-    <Pressable style={({ pressed }) => [estilos.cartao, pressed && estilos.cartaoTocado]} onPress={aoTocar}>
+    <Pressable
+      style={({ pressed }) => [estilos.cartao, pressed && estilos.cartaoTocado]}
+      onPress={aoTocar}
+      // Toque longo abre a ficha daquele treino: editar é raro e não pode
+      // disputar o toque com começar a treinar, que é o motivo da tela existir.
+      onLongPress={aoEditar}
+    >
       <View style={estilos.letra}>
         <Text style={estilos.letraTexto}>{letraDoTreino(ficha.nome)}</Text>
       </View>
@@ -195,8 +257,31 @@ function SessaoEsquecida({
   );
 }
 
+/**
+ * "Último backup há 47 dias" — e nada quando é recente. A linha só aparece
+ * quando começa a importar; presente sempre, viraria papel de parede.
+ */
+function textoDoBackup(ultimo: number | null, agora: number): string {
+  if (ultimo === null) return 'Nenhum backup ainda';
+  const dias = diasEntreDias(ultimo, agora);
+  if (dias <= 0) return 'Backup feito hoje';
+  return `Último backup ${rotuloDeQuandoFoi(ultimo, agora)}`;
+}
+
 const estilos = StyleSheet.create({
   area: { flex: 1, backgroundColor: cor.fundo },
+  rodape: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: espaco.tres,
+    paddingHorizontal: margem.conteudo,
+    paddingBottom: espaco.seis,
+    paddingTop: espaco.dois,
+  },
+  rodapeBackup: { flexDirection: 'row', alignItems: 'center', gap: espaco.dois },
+  rodapeTexto: { ...tipo.meta, color: cor.textoTerciario },
+  rodapeAcao: { ...tipo.rotuloCompacto, fontSize: 13, color: cor.acaoTexto },
   cabecalho: { paddingHorizontal: margem.conteudo, paddingTop: espaco.quatro, gap: espaco.dois },
   kicker: { ...tipo.kicker, color: cor.infoKicker },
   titulo: { ...tipo.tituloDeTelaGrande, color: cor.texto },

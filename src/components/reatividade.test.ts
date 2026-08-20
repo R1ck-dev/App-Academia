@@ -59,9 +59,17 @@ function compilar(nomeArquivo: string, fonte: string): string {
   return saida.code;
 }
 
-/** Os nomes que o arquivo importa de `queries.ts` — só eles interessam. */
+/**
+ * Os nomes que o arquivo importa de um módulo de LEITURA do banco.
+ *
+ * São três: `queries.ts` e os dois do backup, que leem o banco inteiro. Qualquer
+ * módulo novo que leia direto precisa entrar aqui, senão o detector passa por
+ * cima dele sem avisar.
+ */
+const MODULOS_DE_LEITURA = String.raw`@\/db\/(?:queries|exportar|exportar-dados)`;
+
 function consultasImportadas(fonte: string): string[] {
-  const bloco = fonte.match(/import\s*\{([^}]*)\}\s*from\s*'@\/db\/queries'/);
+  const bloco = fonte.match(new RegExp(String.raw`import\s*\{([^}]*)\}\s*from\s*'${MODULOS_DE_LEITURA}'`));
   if (!bloco) return [];
   return bloco[1]
     .split(',')

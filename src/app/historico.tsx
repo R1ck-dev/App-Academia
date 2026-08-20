@@ -2,11 +2,12 @@
  * Aba Histórico: as sessões recentes e a progressão de carga por exercício.
  *
  * Duas perguntas diferentes, dois modos: "o que eu treinei" (sessões) e "estou
- * evoluindo neste exercício" (lista de exercícios → série temporal). Empilhar as
- * duas numa rolagem só faria a segunda começar depois de vinte sessões.
+ * evoluindo neste exercício" (chips → série temporal). Empilhar as duas numa
+ * rolagem só faria a segunda começar depois de vinte sessões.
  *
- * A tela só orquestra: consulta vem de `queries.ts`, recorde e agrupamento vêm do
- * domínio.
+ * A tela só orquestra: consulta vem de `queries.ts`, recorde e agrupamento vêm
+ * do domínio. E é daqui — do histórico da própria máquina — que sai o convite
+ * para calibrar a placa: nunca durante o treino, nunca num menu de ajustes.
  */
 
 import { useState } from 'react';
@@ -14,10 +15,11 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/progresso-base';
 import { useConsulta } from '@/components/progresso-consulta';
-import { ProgressoDoExercicio, ProgressoExercicios } from '@/components/progresso-exercicios';
+import { ChipsDeExercicio, ProgressoDoExercicio } from '@/components/progresso-exercicios';
 import { ProgressoSessoes } from '@/components/progresso-sessoes';
 import { Tela } from '@/components/tela';
-import { espacoLegado as espaco } from '@/constants/tema';
+import { FolhaDeCalibracao } from '@/components/treino-calibracao';
+import { espaco, margem } from '@/constants/tema';
 import { historicoDoExercicio, listarExercicios, sessoesFinalizadas } from '@/db/queries';
 
 /** O histórico é para olhar, não para rolar: além disso é arqueologia. */
@@ -30,28 +32,20 @@ type Modo = 'sessoes' | 'exercicios';
 export default function Historico() {
   const [modo, setModo] = useState<Modo>('sessoes');
   const [exercicioId, setExercicioId] = useState<string | null>(null);
+  const [calibrando, setCalibrando] = useState(false);
 
   const dados = useConsulta('Historico', () => ({
     sessoes: sessoesFinalizadas(SESSOES_NA_LISTA),
     exercicios: listarExercicios(),
   }));
 
-  // Consultado à parte: o detalhe é de UM exercício e só existe quando há um
-  // escolhido — carregá-lo junto da lista seria 24 históricos por render. O id
-  // entra na chave: sem ele, trocar de exercício devolveria o histórico do outro.
-  const detalhe = useConsulta(`Historico:detalhe:${exercicioId}`, () =>
-    exercicioId === null ? null : historicoDoExercicio(exercicioId, SERIES_NO_DETALHE)
-  );
+  // O primeiro exercício do catálogo abre por padrão: uma tela de chips sem nada
+  // embaixo obrigaria um toque só para começar a ler.
+  const escolhido = exercicioId ?? dados.exercicios[0]?.id ?? null;
 
-  if (detalhe !== null) {
-    return (
-      <Tela titulo={detalhe.exercicio.nome}>
-        <ScrollView style={estilos.rolagem} contentContainerStyle={estilos.conteudo}>
-          <ProgressoDoExercicio historico={detalhe} aoVoltar={() => setExercicioId(null)} />
-        </ScrollView>
-      </Tela>
-    );
-  }
+  const detalhe = useConsulta(`Historico:detalhe:${escolhido}`, () =>
+    escolhido === null ? null : historicoDoExercicio(escolhido, SERIES_NO_DETALHE)
+  );
 
   return (
     <Tela titulo="Histórico">
@@ -64,21 +58,31 @@ export default function Historico() {
         />
       </View>
 
-      <ScrollView contentContainerStyle={estilos.conteudo}>
+      {modo === 'exercicios' ? (
+        <ChipsDeExercicio
+          exercicios={dados.exercicios}
+          escolhido={escolhido}
+          aoEscolher={setExercicioId}
+        />
+      ) : null}
+
+      <ScrollView style={estilos.rolagem} contentContainerStyle={estilos.conteudo}>
         {modo === 'sessoes' ? (
           <ProgressoSessoes sessoes={dados.sessoes} />
-        ) : (
-          <ProgressoExercicios exercicios={dados.exercicios} aoEscolher={setExercicioId} />
+        ) : detalhe === null ? null : (
+          <ProgressoDoExercicio historico={detalhe} aoCalibrar={() => setCalibrando(true)} />
         )}
       </ScrollView>
+
+      {calibrando && detalhe !== null ? (
+        <FolhaDeCalibracao exercicio={detalhe.exercicio} aoFechar={() => setCalibrando(false)} />
+      ) : null}
     </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  chips: { flexDirection: 'row', gap: espaco.sm },
-  // Sem `flex: 1` a ScrollView cresce com o conteúdo e para de rolar dentro da
-  // coluna da `Tela` — a 30ª sessão fica inalcançável.
+  chips: { flexDirection: 'row', gap: espaco.dois, paddingHorizontal: margem.conteudo },
   rolagem: { flex: 1 },
-  conteudo: { gap: espaco.md, paddingBottom: espaco.xl },
+  conteudo: { paddingBottom: espaco.oito },
 });

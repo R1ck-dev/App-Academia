@@ -71,7 +71,7 @@ export function ResumoDaSessao({
 
   return (
     <SafeAreaView style={estilos.area} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={estilos.rolagem}>
+      <ScrollView style={estilos.expandir} contentContainerStyle={estilos.rolagem}>
         <View style={estilos.cabecalho}>
           <Text style={estilos.kicker}>
             {resumo.nome}
@@ -281,6 +281,8 @@ function textoDoVolume(v: VolumeDaSessao): string {
 }
 
 const estilos = StyleSheet.create({
+  /** A rolagem cede o espaço do rodapé fixo em vez de empurrá-lo para fora. */
+  expandir: { flex: 1 },
   area: { flex: 1, backgroundColor: cor.fundo },
   rolagem: { paddingBottom: espaco.seis },
   cabecalho: { paddingHorizontal: margem.conteudo, paddingTop: espaco.tres, gap: espaco.dois },

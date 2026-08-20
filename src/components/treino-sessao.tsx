@@ -206,7 +206,11 @@ export function TelaSessao({
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={estilos.rolagem} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={estilos.expandir}
+        contentContainerStyle={estilos.rolagem}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={estilos.cabecalhoDoExercicio}>
           <Text style={estilos.nomeDoExercicio}>{ex.nome}</Text>
           <View style={estilos.contexto}>
@@ -448,6 +452,8 @@ function textoDaPosicao(item: ItemDaSessao): string {
 }
 
 const estilos = StyleSheet.create({
+  /** A rolagem cede o espaço do rodapé fixo em vez de empurrá-lo para fora. */
+  expandir: { flex: 1 },
   area: { flex: 1, backgroundColor: cor.fundo },
   topo: {
     flexDirection: 'row',
