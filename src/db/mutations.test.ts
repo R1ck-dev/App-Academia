@@ -24,6 +24,7 @@ import {
   definirItemDoTreino,
   definirObjetivoPeso,
   definirPreferencia,
+  descartarSessaoVazia,
   desfazerSerie,
   editarExercicio,
   finalizarSessao,
@@ -172,6 +173,44 @@ describe('sessão', () => {
         .finalizada_em,
       ultimaSerie
     );
+  });
+
+  it('descartar apaga a sessão que não tem série nenhuma, e libera abrir outra', () => {
+    const errada = abrir('Treino B');
+
+    assert.equal(descartarSessaoVazia(errada), true);
+    assert.equal(contar('select count(*) n from sessoes'), 0);
+
+    // O ponto do descarte: `uq_sessao_aberta` não bloqueia mais o treino certo.
+    const certa = iniciarSessao({ nome: 'Treino A' });
+    assert.ok(certa.ok);
+  });
+
+  it('descartar RECUSA a sessão que já tem série, e não apaga nada', () => {
+    const exercicio = criarExercicio({ nome: 'Supino', tipoMedicao: 'carga_kg' });
+    const sessao = abrir('Treino A');
+    registrarSerie({ sessaoId: sessao, exercicioId: exercicio, indice: 0, carga: kg(40), repeticoes: 10 });
+
+    assert.equal(descartarSessaoVazia(sessao), false);
+    assert.equal(contar('select count(*) n from sessoes'), 1);
+  });
+
+  it('descartar recusa também quando a única série foi DESFEITA', () => {
+    // A série arquivada continua sendo linha com FK para a sessão: apagar a
+    // sessão deixaria o banco apontando para o que não existe mais.
+    const exercicio = criarExercicio({ nome: 'Remada', tipoMedicao: 'carga_kg' });
+    const sessao = abrir('Treino A');
+    const serie = registrarSerie({
+      sessaoId: sessao,
+      exercicioId: exercicio,
+      indice: 0,
+      carga: kg(30),
+      repeticoes: 12,
+    });
+    desfazerSerie(serie);
+
+    assert.equal(descartarSessaoVazia(sessao), false);
+    assert.equal(contar('select count(*) n from sessoes'), 1);
   });
 
   it('reabrir devolve a sessão ao estado de em andamento', () => {

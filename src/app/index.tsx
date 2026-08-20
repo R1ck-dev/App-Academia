@@ -9,6 +9,12 @@
  * de execução. A exceção é a sessão esquecida aberta de outro dia, que ganha uma
  * escolha explícita — começar hoje dentro da sessão de ontem estragaria o
  * agrupamento por dia, e fechá-la sozinho seria fabricar um horário de término.
+ *
+ * O voltar do aparelho é tratado AQUI, num ponto só, porque backup, ficha,
+ * resumo e execução são estado deste arquivo e não pilha de navegação — um
+ * listener por tela disputaria a ordem de registro. Sair da execução por ele
+ * NÃO finaliza: `minimizada` guarda a sessão que continua aberta, e a abertura
+ * oferece voltar para ela. Finalizar é sempre toque explícito.
  */
 
 import { useState } from 'react';
@@ -22,8 +28,9 @@ import { ResumoDaSessao } from '@/components/treino-resumo';
 import { TelaSessao } from '@/components/treino-sessao';
 import { useSeriesDaSessao, useSessaoEmAndamento } from '@/components/treino-dados';
 import { letraDoTreino } from '@/components/treino-texto';
+import { useVoltarDoAparelho } from '@/components/voltar-do-aparelho';
 import { alvo, cor, espaco, margem, raio, tipo } from '@/constants/tema';
-import { finalizarSessao, iniciarSessao } from '@/db/mutations';
+import { descartarSessaoVazia, finalizarSessao, iniciarSessao } from '@/db/mutations';
 import { ultimoBackupEm } from '@/db/exportar';
 import { resumoDosTreinos, type ResumoDeTreino } from '@/db/queries';
 import type { Sessao } from '@/db/schema';
@@ -41,7 +48,30 @@ export default function TreinoDeHoje() {
   const sessao = useSessaoEmAndamento();
   const [resumoDe, setResumoDe] = useState<string | null>(null);
   const [retomada, setRetomada] = useState<string | null>(null);
+  const [minimizada, setMinimizada] = useState<string | null>(null);
   const [destino, setDestino] = useState<Destino>(null);
+
+  const deHoje = sessao !== undefined && diaLocal(sessao.iniciadaEm) === diaLocal(Date.now());
+  const executando =
+    sessao !== undefined && (deHoje || retomada === sessao.id) && minimizada !== sessao.id;
+
+  function sair(sessaoId: string) {
+    setRetomada(null);
+    // Nenhuma série registrada é engano de dedo, não treino: a sessão some, e
+    // com ela o bloqueio de `uq_sessao_aberta` que impediria começar a certa.
+    // Com série, ela fica aberta e a abertura oferece voltar.
+    if (!descartarSessaoVazia(sessaoId)) setMinimizada(sessaoId);
+  }
+
+  useVoltarDoAparelho(
+    destino !== null
+      ? () => setDestino(null)
+      : resumoDe !== null
+        ? () => setResumoDe(null)
+        : executando
+          ? () => sair(sessao.id)
+          : null
+  );
 
   // Ficha e backup são as duas telas de "em casa, sentado". Elas vivem DENTRO da
   // aba Treino, e não como abas próprias, porque uma aba a mais na barra
@@ -64,26 +94,32 @@ export default function TreinoDeHoje() {
     return <ResumoDaSessao sessaoId={resumoDe} aoConcluir={() => setResumoDe(null)} />;
   }
 
-  if (sessao !== undefined) {
-    const deHoje = diaLocal(sessao.iniciadaEm) === diaLocal(Date.now());
-    if (deHoje || retomada === sessao.id) {
-      return (
-        <TelaSessao
-          sessaoId={sessao.id}
-          aoFinalizar={(id) => {
-            setRetomada(null);
-            setResumoDe(id);
-          }}
-        />
-      );
-    }
+  if (executando) {
+    return (
+      <TelaSessao
+        sessaoId={sessao.id}
+        aoFinalizar={(id) => {
+          setRetomada(null);
+          setMinimizada(null);
+          setResumoDe(id);
+        }}
+      />
+    );
   }
 
   return (
     <Abertura
-      esquecida={sessao}
-      aoRetomar={() => sessao !== undefined && setRetomada(sessao.id)}
-      aoFinalizar={(id) => setResumoDe(id)}
+      aberta={sessao}
+      deHoje={deHoje}
+      aoContinuar={() => {
+        if (sessao === undefined) return;
+        setMinimizada(null);
+        setRetomada(sessao.id);
+      }}
+      aoFinalizar={(id) => {
+        setMinimizada(null);
+        setResumoDe(id);
+      }}
       aoAbrirBackup={() => setDestino({ tipo: 'backup' })}
       aoEditarFicha={(ficha) => setDestino({ tipo: 'ficha', ficha })}
     />
@@ -91,20 +127,22 @@ export default function TreinoDeHoje() {
 }
 
 /**
- * "Bora treinar": os três cartões, e — quando existe — a sessão de ontem que
- * ficou aberta, resolvida ANTES da escolha do dia. Ela vem depois dos cartões
- * na tela porque começar um treino novo é o caso comum; ela vem antes na cabeça
- * dele porque é a pendência.
+ * "Bora treinar": os três cartões, e — quando existe — a sessão aberta,
+ * resolvida ANTES da escolha do dia. Ela vem depois dos cartões na tela porque
+ * começar um treino novo é o caso comum; ela vem antes na cabeça dele porque é
+ * a pendência.
  */
 function Abertura({
-  esquecida,
-  aoRetomar,
+  aberta,
+  deHoje,
+  aoContinuar,
   aoFinalizar,
   aoAbrirBackup,
   aoEditarFicha,
 }: {
-  esquecida: Sessao | undefined;
-  aoRetomar: () => void;
+  aberta: Sessao | undefined;
+  deHoje: boolean;
+  aoContinuar: () => void;
   aoFinalizar: (sessaoId: string) => void;
   aoAbrirBackup: () => void;
   aoEditarFicha: (ficha: ResumoDeTreino) => void;
@@ -148,8 +186,13 @@ function Abertura({
           </View>
         )}
 
-        {esquecida === undefined ? null : (
-          <SessaoEsquecida sessao={esquecida} aoRetomar={aoRetomar} aoFinalizar={aoFinalizar} />
+        {aberta === undefined ? null : (
+          <SessaoAberta
+            sessao={aberta}
+            deHoje={deHoje}
+            aoContinuar={aoContinuar}
+            aoFinalizar={aoFinalizar}
+          />
         )}
       </ScrollView>
 
@@ -208,17 +251,25 @@ function CartaoDoTreino({
 }
 
 /**
- * A sessão de ontem que ficou aberta. Duas saídas, ambas honestas: continuar
- * dentro dela, ou fechá-la no horário da ÚLTIMA série — que é o último instante
- * sobre o qual existe dado, e não um término inventado.
+ * A sessão que continua aberta, em dois casos que merecem palavras diferentes.
+ *
+ * A de HOJE é o treino que ele deixou de lado pelo voltar do aparelho: nada
+ * está errado, ele só saiu para olhar outra coisa. Finalizar ali usa o instante
+ * de agora, porque é agora.
+ *
+ * A de OUTRO DIA é a que ele esqueceu aberta. Ali finalizar usa o horário da
+ * ÚLTIMA série — o último instante sobre o qual existe dado. Carimbar "agora"
+ * numa sessão de ontem inventaria um treino de dezoito horas.
  */
-function SessaoEsquecida({
+function SessaoAberta({
   sessao,
-  aoRetomar,
+  deHoje,
+  aoContinuar,
   aoFinalizar,
 }: {
   sessao: Sessao;
-  aoRetomar: () => void;
+  deHoje: boolean;
+  aoContinuar: () => void;
   aoFinalizar: (sessaoId: string) => void;
 }) {
   const feitas = useSeriesDaSessao(sessao.id);
@@ -226,31 +277,40 @@ function SessaoEsquecida({
     (maior, serie) => Math.max(maior, serie.concluidaEm),
     sessao.iniciadaEm
   );
+  const series = `${feitas.length} ${feitas.length === 1 ? 'série' : 'séries'}`;
 
   function finalizar() {
-    finalizarSessao(sessao.id, ultimoInstante);
+    finalizarSessao(sessao.id, deHoje ? undefined : ultimoInstante);
     aoFinalizar(sessao.id);
   }
 
   return (
     <View style={estilos.aviso}>
-      <Text style={estilos.avisoTitulo}>Sessão de outro dia ficou aberta</Text>
+      <Text style={estilos.avisoTitulo}>
+        {deHoje ? 'Treino em andamento' : 'Sessão de outro dia ficou aberta'}
+      </Text>
       <Text style={estilos.avisoTexto}>
-        {sessao.nome} · {feitas.length} {feitas.length === 1 ? 'série' : 'séries'} · última às{' '}
-        {formatarHora(ultimoInstante)}
+        {sessao.nome} · {series} ·{' '}
+        {deHoje
+          ? `começou às ${formatarHora(sessao.iniciadaEm)}`
+          : `última às ${formatarHora(ultimoInstante)}`}
       </Text>
       <View style={estilos.avisoBotoes}>
         <Pressable
           style={({ pressed }) => [estilos.infoCheio, pressed && estilos.infoCheioTocado]}
-          onPress={aoRetomar}
+          onPress={aoContinuar}
         >
-          <Text style={estilos.infoCheioTexto}>Continuar nela</Text>
+          <Text style={estilos.infoCheioTexto}>
+            {deHoje ? 'Voltar ao treino' : 'Continuar nela'}
+          </Text>
         </Pressable>
         <Pressable
           style={({ pressed }) => [estilos.infoContorno, pressed && estilos.infoContornoTocado]}
           onPress={finalizar}
         >
-          <Text style={estilos.infoContornoTexto}>Fechar às {formatarHora(ultimoInstante)}</Text>
+          <Text style={estilos.infoContornoTexto}>
+            {deHoje ? 'Finalizar agora' : `Fechar às ${formatarHora(ultimoInstante)}`}
+          </Text>
         </Pressable>
       </View>
     </View>

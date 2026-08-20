@@ -586,6 +586,31 @@ export function reabrirSessao(sessaoId: string): void {
   anunciarEscrita();
 }
 
+/**
+ * Abriu o treino errado e saiu antes de registrar qualquer coisa.
+ *
+ * Apaga de verdade, sem `arquivadoEm`: sessão sem uma série sequer não é
+ * histórico, é engano — e deixá-la aberta ainda BLOQUEARIA começar o treino
+ * certo, porque `uq_sessao_aberta` só admite uma aberta por vez.
+ *
+ * Recusa (devolvendo `false`) se existir qualquer série apontando para ela,
+ * **inclusive desfeita**: a série arquivada continua sendo linha no banco com
+ * FK para a sessão, e o registro de que aquele treino existiu. Quem chama trata
+ * o `false` como "esta ainda vale, deixe aberta".
+ */
+export function descartarSessaoVazia(sessaoId: string): boolean {
+  return db.transaction((tx) => {
+    const alguma = tx
+      .select({ id: series.id })
+      .from(series)
+      .where(eq(series.sessaoId, sessaoId))
+      .get();
+    if (alguma) return false;
+    tx.delete(sessoes).where(eq(sessoes.id, sessaoId)).run();
+    return true;
+  });
+}
+
 // ── SÉRIE ──────────────────────────────────────────────────────────────────
 
 /**
