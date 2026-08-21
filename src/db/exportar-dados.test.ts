@@ -35,14 +35,14 @@ import {
   salvarAltura,
 } from './mutations.ts';
 import { exercicios, medidas, pesagens, series, sessoes, treinos } from './schema.ts';
-import { kg, placa } from '../dominio/carga.ts';
+import { kg } from '../dominio/carga.ts';
 
 const T = Date.UTC(2026, 7, 16, 12, 0, 0);
 
-/** Um banco com dado de todo tipo, inclusive o arquivado e as duas unidades. */
+/** Um banco com dado de todo tipo, inclusive o arquivado e o sem carga. */
 function bancoPovoado() {
   const supino = criarExercicio({ nome: 'Supino Inclinado', tipoMedicao: 'carga_kg' });
-  const peck = criarExercicio({ nome: 'Peck Deck', tipoMedicao: 'carga_placa' });
+  const abdominal = criarExercicio({ nome: 'Abdominal Supra Solo', tipoMedicao: 'peso_corporal' });
   const antigo = criarExercicio({ nome: 'Exercício aposentado', tipoMedicao: 'carga_kg' });
   arquivarExercicio(antigo);
 
@@ -68,9 +68,9 @@ function bancoPovoado() {
   });
   registrarSerie({
     sessaoId: sessao.sessaoId,
-    exercicioId: peck,
+    exercicioId: abdominal,
     indice: 0,
-    carga: placa(5),
+    carga: null,
     repeticoes: 12,
     tipo: 'aquecimento',
   });
@@ -81,7 +81,7 @@ function bancoPovoado() {
   salvarAltura(1750);
   definirObjetivoPeso(75000);
 
-  return { supino, peck, antigo, treino, sessao: sessao.sessaoId };
+  return { supino, abdominal, antigo, treino, sessao: sessao.sessaoId };
 }
 
 /** Uma foto comparável do banco inteiro, para o antes e o depois. */
@@ -175,20 +175,24 @@ describe('a volta completa', () => {
     assert.equal(foto(), antes);
   });
 
-  it('preserva as duas unidades de carga separadas', () => {
+  it('preserva a carga e o NULL de quem não tem carga', () => {
     bancoPovoado();
     const backup = montarBackup(T);
     criarBancoDeTeste();
     restaurarBackup(backup);
 
     const linhas = db.select().from(series).all();
-    const emKg = linhas.find((s) => s.cargaG !== null);
-    const emPlaca = linhas.find((s) => s.cargaPlacas !== null);
+    // NULL é "não se aplica" e não zero: restaurar não pode trocar um pelo
+    // outro, senão o abdominal vira "levantou zero quilo" no volume.
+    assert.equal(linhas.find((s) => s.cargaG !== null)?.cargaG, 42500);
+    assert.equal(linhas.filter((s) => s.cargaG === null).length, 1);
+  });
 
-    assert.equal(emKg?.cargaG, 42500);
-    assert.equal(emKg?.cargaPlacas, null);
-    assert.equal(emPlaca?.cargaPlacas, 5);
-    assert.equal(emPlaca?.cargaG, null);
+  it('recusa o backup da versão que ainda tinha placa, em vez de importar torto', () => {
+    const v1 = JSON.stringify({ versao: 1, geradoEm: T, tabelas: {} });
+    const r = interpretar(v1);
+    assert.equal(r.ok, false);
+    assert.match(r.ok ? '' : r.erro, /placa/i);
   });
 
   it('restaurar avisa a tela — senão o app fica mostrando o banco antigo', () => {
@@ -225,7 +229,7 @@ describe('interpretar recusa antes de tocar no banco', () => {
   });
 
   it('tabela corrompida', () => {
-    const r = interpretar(JSON.stringify({ versao: 1, geradoEm: T, tabelas: { series: 42 } }));
+    const r = interpretar(JSON.stringify({ versao: VERSAO_DO_BACKUP, geradoEm: T, tabelas: { series: 42 } }));
     assert.ok(!r.ok);
     assert.match(r.erro, /series/);
   });

@@ -94,29 +94,23 @@ describe('0000: o banco que o primeiro boot cria', () => {
 describe('0000: os CHECK barram a linha incoerente', () => {
   /** Insere o mínimo para as FKs existirem, e devolve os ids. */
   function base(bruto: DatabaseSync) {
-    bruto.exec(`insert into exercicios (id, nome, tipo_medicao, incremento_placas, criado_em, atualizado_em)
-      values ('ex-placa', 'Peck Dorsal', 'carga_placa', 1, 1, 1)`);
+    bruto.exec(`insert into exercicios (id, nome, tipo_medicao, incremento_g, criado_em, atualizado_em)
+      values ('ex-kg', 'Peck Dorsal', 'carga_kg', 2500, 1, 1)`);
     bruto.exec(`insert into sessoes (id, nome, iniciada_em, criado_em, atualizado_em)
       values ('ss-1', 'Treino A', 100, 1, 1)`);
-    return { exercicio: 'ex-placa', sessao: 'ss-1' };
+    return { exercicio: 'ex-kg', sessao: 'ss-1' };
   }
 
   function serie(campos: string, valores: string): string {
     return `insert into series (id, sessao_id, exercicio_id, indice, tipo, concluida_em, criado_em, atualizado_em${campos})
-      values ('se-x', 'ss-1', 'ex-placa', 0, 'valida', 100, 1, 1${valores})`;
+      values ('se-x', 'ss-1', 'ex-kg', 0, 'valida', 100, 1, 1${valores})`;
   }
 
-  it('série não pode ter as duas cargas — a mistura de unidade não chega a existir', () => {
-    const bruto = bancoCru();
-    base(bruto);
-    assert.throws(() => bruto.exec(serie(', carga_g, carga_placas', ', 40000, 5')), /ck_series_uma_unidade/);
-  });
-
-  it('série não pode ter carga zero nem negativa', () => {
+  it('série não pode ter carga zero nem negativa — NULL é "não se aplica", zero seria peso', () => {
     const bruto = bancoCru();
     base(bruto);
     assert.throws(() => bruto.exec(serie(', carga_g', ', 0')), /ck_series_carga_positiva/);
-    assert.throws(() => bruto.exec(serie(', carga_placas', ', -1')), /ck_series_carga_positiva/);
+    assert.throws(() => bruto.exec(serie(', carga_g', ', -1')), /ck_series_carga_positiva/);
   });
 
   it('série não pode ter rir fora de 0..5, repetição zero, duração zero nem índice negativo', () => {
@@ -128,12 +122,12 @@ describe('0000: os CHECK barram a linha incoerente', () => {
     assert.throws(
       () =>
         bruto.exec(`insert into series (id, sessao_id, exercicio_id, indice, tipo, concluida_em, criado_em, atualizado_em)
-          values ('se-y', 'ss-1', 'ex-placa', -1, 'valida', 100, 1, 1)`),
+          values ('se-y', 'ss-1', 'ex-kg', -1, 'valida', 100, 1, 1)`),
       /ck_series_indice/
     );
   });
 
-  it('exercício de tempo não carrega incremento, e exercício de placa não carrega incremento em gramas', () => {
+  it('exercício sem carga não carrega incremento, e exercício com carga exige um', () => {
     const bruto = bancoCru();
     assert.throws(
       () =>
@@ -141,21 +135,23 @@ describe('0000: os CHECK barram a linha incoerente', () => {
           values ('ex-1', 'Esteira', 'tempo', 2500, 1, 1)`),
       /ck_exercicios_incremento/
     );
+    // `is not null` explícito no CHECK: com a coluna nula, `null > 0` avalia
+    // como NULL, e CHECK que devolve NULL PASSA. Este caso é a rede disso.
     assert.throws(
       () =>
-        bruto.exec(`insert into exercicios (id, nome, tipo_medicao, incremento_g, criado_em, atualizado_em)
-          values ('ex-2', 'Remada Alta', 'carga_placa', 2500, 1, 1)`),
+        bruto.exec(`insert into exercicios (id, nome, tipo_medicao, criado_em, atualizado_em)
+          values ('ex-2', 'Remada Alta', 'carga_kg', 1, 1)`),
       /ck_exercicios_incremento/
     );
   });
 
-  it('só exercício de placa tem gramas por placa', () => {
+  it('tipo de medição que não existe é barrado — placa saiu do app', () => {
     const bruto = bancoCru();
     assert.throws(
       () =>
-        bruto.exec(`insert into exercicios (id, nome, tipo_medicao, incremento_g, gramas_por_placa, criado_em, atualizado_em)
-          values ('ex-3', 'Supino', 'carga_kg', 2500, 5000, 1, 1)`),
-      /ck_exercicios_placa/
+        bruto.exec(`insert into exercicios (id, nome, tipo_medicao, incremento_g, criado_em, atualizado_em)
+          values ('ex-3', 'Peck Dorsal', 'carga_placa', 2500, 1, 1)`),
+      /ck_exercicios_tipo/
     );
   });
 
@@ -229,19 +225,19 @@ describe('0000: os CHECK barram a linha incoerente', () => {
     );
 
     bruto.exec(`insert into treinos (id, nome, criado_em, atualizado_em) values ('tr-1', 'A', 1, 1)`);
-    bruto.exec(`insert into exercicios (id, nome, tipo_medicao, incremento_placas, criado_em, atualizado_em)
-      values ('ex-placa', 'Peck Dorsal', 'carga_placa', 1, 1, 1)`);
+    bruto.exec(`insert into exercicios (id, nome, tipo_medicao, incremento_g, criado_em, atualizado_em)
+      values ('ex-kg', 'Peck Dorsal', 'carga_kg', 2500, 1, 1)`);
     assert.throws(
       () =>
         bruto.exec(`insert into treino_exercicios (id, treino_id, exercicio_id, series_alvo, criado_em, atualizado_em)
-          values ('te-1', 'tr-1', 'ex-placa', 0, 1, 1)`),
+          values ('te-1', 'tr-1', 'ex-kg', 0, 1, 1)`),
       /ck_te_series_alvo/
     );
     assert.throws(
       () =>
-        bruto.exec(`insert into treino_exercicios (id, treino_id, exercicio_id, series_alvo, carga_alvo_g, carga_alvo_placas, criado_em, atualizado_em)
-          values ('te-2', 'tr-1', 'ex-placa', 4, 40000, 5, 1, 1)`),
-      /ck_te_uma_unidade/
+        bruto.exec(`insert into treino_exercicios (id, treino_id, exercicio_id, series_alvo, carga_alvo_g, criado_em, atualizado_em)
+          values ('te-2', 'tr-1', 'ex-kg', 4, 0, 1, 1)`),
+      /ck_te_carga_positiva/
     );
   });
 });
@@ -254,23 +250,23 @@ describe('o padrão que toda migration nova é obrigada a seguir', () => {
    * errada.
    */
   function gravarComoAVersaoInstalada(bruto: DatabaseSync) {
-    bruto.exec(`insert into exercicios (id, nome, grupo_muscular, tipo_medicao, incremento_placas, gramas_por_placa, criado_em, atualizado_em)
-      values ('ex-1', 'Peck Dorsal', 'Costas', 'carga_placa', 1, 5000, 10, 10)`);
+    bruto.exec(`insert into exercicios (id, nome, grupo_muscular, tipo_medicao, incremento_g, criado_em, atualizado_em)
+      values ('ex-1', 'Peck Dorsal', 'Costas', 'carga_kg', 2500, 10, 10)`);
     bruto.exec(`insert into treinos (id, nome, ordem, criado_em, atualizado_em)
       values ('tr-1', 'Treino A', 0, 10, 10)`);
-    bruto.exec(`insert into treino_exercicios (id, treino_id, exercicio_id, ordem, series_alvo, reps_alvo_min, reps_alvo_max, carga_alvo_placas, descanso_s, criado_em, atualizado_em)
-      values ('te-1', 'tr-1', 'ex-1', 0, 4, 10, 10, 5, 90, 10, 10)`);
+    bruto.exec(`insert into treino_exercicios (id, treino_id, exercicio_id, ordem, series_alvo, reps_alvo_min, reps_alvo_max, carga_alvo_g, descanso_s, criado_em, atualizado_em)
+      values ('te-1', 'tr-1', 'ex-1', 0, 4, 10, 10, 25000, 90, 10, 10)`);
     bruto.exec(`insert into sessoes (id, treino_id, nome, iniciada_em, finalizada_em, criado_em, atualizado_em)
       values ('ss-1', 'tr-1', 'Treino A', 100, 200, 10, 10)`);
-    bruto.exec(`insert into series (id, sessao_id, exercicio_id, indice, tipo, carga_placas, repeticoes, rir, concluida_em, criado_em, atualizado_em)
-      values ('se-1', 'ss-1', 'ex-1', 0, 'valida', 5, 10, 2, 150, 10, 10)`);
+    bruto.exec(`insert into series (id, sessao_id, exercicio_id, indice, tipo, carga_g, repeticoes, rir, concluida_em, criado_em, atualizado_em)
+      values ('se-1', 'ss-1', 'ex-1', 0, 'valida', 25000, 10, 2, 150, 10, 10)`);
     bruto.exec(`insert into pesagens (id, peso_g, medido_em, criado_em, atualizado_em)
       values ('pe-1', 78400, 100, 10, 10)`);
     bruto.exec(`insert into medidas (id, parte, valor_mm, medido_em, criado_em, atualizado_em)
       values ('me-1', 'braco_direito', 385, 100, 10, 10)`);
     bruto.exec(`insert into perfil (id, altura_mm, peso_objetivo_g, peso_inicial_g, criado_em, atualizado_em)
       values ('unico', 1780, 75000, 82000, 10, 10)`);
-    bruto.exec(`insert into preferencias (chave, valor, atualizado_em) values ('seed_versao', '1', 10)`);
+    bruto.exec(`insert into preferencias (chave, valor, atualizado_em) values ('ultimo_backup', '100', 10)`);
   }
 
   it(`aplicar até ${PROXIMA - 1}, gravar, aplicar ${PROXIMA}: nada some nem vira NULL`, () => {
@@ -285,10 +281,7 @@ describe('o padrão que toda migration nova é obrigada a seguir', () => {
       string,
       unknown
     >;
-    assert.equal(serie.carga_placas, 5);
-    // A carga continua na COLUNA da unidade: uma migration que "unificasse" as
-    // duas colunas passaria a somar 5 com 42500 sem ninguém perceber.
-    assert.equal(serie.carga_g, null);
+    assert.equal(serie.carga_g, 25000);
     assert.equal(serie.repeticoes, 10);
     assert.equal(serie.rir, 2);
     assert.equal(serie.concluida_em, 150);
@@ -297,15 +290,14 @@ describe('o padrão que toda migration nova é obrigada a seguir', () => {
       string,
       unknown
     >;
-    assert.equal(exercicio.tipo_medicao, 'carga_placa');
-    assert.equal(exercicio.incremento_placas, 1);
-    assert.equal(exercicio.gramas_por_placa, 5000);
+    assert.equal(exercicio.tipo_medicao, 'carga_kg');
+    assert.equal(exercicio.incremento_g, 2500);
 
     const item = bruto.prepare("select * from treino_exercicios where id = 'te-1'").get() as Record<
       string,
       unknown
     >;
-    assert.equal(item.carga_alvo_placas, 5);
+    assert.equal(item.carga_alvo_g, 25000);
     assert.equal(item.series_alvo, 4);
     assert.equal(item.descanso_s, 90);
 

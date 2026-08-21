@@ -2,14 +2,14 @@
  * As invariantes de escrita, contra SQLite de verdade.
  *
  * Os asserts leem o banco por SQL cru de propósito: o que está sendo provado é
- * o que FOI GRAVADO em qual COLUNA — passar por `queries.ts` esconderia
- * justamente a distinção `carga_g` × `carga_placas` atrás do mapeamento.
+ * o que FOI GRAVADO em qual COLUNA — passar por `queries.ts` esconderia o
+ * mapeamento e, com ele, a diferença entre NULL e zero.
  */
 
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
-import { kg, placa } from '../dominio/carga.ts';
+import { kg } from '../dominio/carga.ts';
 import { criarBancoDeTeste, type BancoDeTeste } from './banco-de-teste.ts';
 import {
   arquivarMedida,
@@ -77,34 +77,31 @@ function abrir(nome: string, treinoId?: string): string {
 }
 
 describe('catálogo', () => {
-  it('usa o incremento padrão da unidade e grava na coluna certa', () => {
-    const remada = criarExercicio({ nome: 'Remada Alta', tipoMedicao: 'carga_placa' });
+  it('usa o incremento padrão de quem tem carga, e nenhum de quem não tem', () => {
     const supino = criarExercicio({ nome: 'Supino Inclinado', tipoMedicao: 'carga_kg' });
     const abdominal = criarExercicio({ nome: 'Abdominal Supra', tipoMedicao: 'peso_corporal' });
+    const esteira = criarExercicio({ nome: 'Esteira', tipoMedicao: 'tempo' });
 
-    assert.deepEqual(
-      linha('select incremento_g, incremento_placas from exercicios where id = ?', remada),
-      { incremento_g: null, incremento_placas: 1 }
-    );
-    assert.deepEqual(
-      linha('select incremento_g, incremento_placas from exercicios where id = ?', supino),
-      { incremento_g: 2500, incremento_placas: null }
-    );
-    assert.deepEqual(
-      linha('select incremento_g, incremento_placas from exercicios where id = ?', abdominal),
-      { incremento_g: null, incremento_placas: null }
-    );
+    assert.deepEqual(linha('select incremento_g from exercicios where id = ?', supino), {
+      incremento_g: 2500,
+    });
+    assert.deepEqual(linha('select incremento_g from exercicios where id = ?', abdominal), {
+      incremento_g: null,
+    });
+    assert.deepEqual(linha('select incremento_g from exercicios where id = ?', esteira), {
+      incremento_g: null,
+    });
   });
 
-  it('recusa incremento na unidade errada e gramas por placa fora de placa', () => {
-    assert.throws(() =>
-      criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa', incremento: kg(2500) })
-    );
+  it('recusa incremento onde não há carga, e nada é gravado', () => {
     assert.throws(() =>
       criarExercicio({ nome: 'Esteira', tipoMedicao: 'tempo', incremento: kg(2500) })
     );
     assert.throws(() =>
-      criarExercicio({ nome: 'Supino', tipoMedicao: 'carga_kg', gramasPorPlaca: 5000 })
+      criarExercicio({ nome: 'Abdominal', tipoMedicao: 'peso_corporal', incremento: kg(2500) })
+    );
+    assert.throws(() =>
+      criarExercicio({ nome: 'Supino', tipoMedicao: 'carga_kg', incremento: null })
     );
     assert.equal(contar('select count(*) n from exercicios'), 0);
   });
@@ -120,7 +117,9 @@ describe('catálogo', () => {
     assert.equal(depois.nome, 'Elevação Lateral c/ Halter');
     assert.equal(depois.incremento_g, 1000);
 
-    assert.throws(() => editarExercicio(halter, { incremento: placa(1) }));
+    // Tirar o incremento de um exercício que tem carga deixaria a execução sem
+    // "+"/"−": a mutation recusa antes de o CHECK precisar reclamar.
+    assert.throws(() => editarExercicio(halter, { incremento: null }));
   });
 });
 
@@ -232,44 +231,44 @@ describe('sessão', () => {
 
 describe('a trava exercício ↔ série', () => {
   // Esta é a defesa que o SQLite NÃO pode dar: CHECK não aceita subquery, então
-  // sem estes casos "gravar 5 placas num exercício de kg" passa em silêncio e o
-  // histórico do exercício vira duas unidades misturadas.
+  // sem estes casos "gravar 40 kg num abdominal" passa em silêncio, e o volume
+  // da sessão passa a somar o que ninguém levantou.
 
-  it('recusa kg num exercício de placa, e não grava nada', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+  it('recusa carga num exercício de peso corporal, e não grava nada', () => {
+    const abdominal = criarExercicio({ nome: 'Abdominal Supra Solo', tipoMedicao: 'peso_corporal' });
     const sessao = abrir('Treino A');
 
     assert.throws(
       () =>
         registrarSerie({
           sessaoId: sessao,
-          exercicioId: peck,
+          exercicioId: abdominal,
           indice: 0,
           carga: kg(40000),
           repeticoes: 10,
         }),
-      /Peck Dorsal/
+      /Abdominal Supra Solo/
     );
     assert.equal(contar('select count(*) n from series'), 0);
   });
 
-  it('recusa placa num exercício de kg', () => {
-    const supino = criarExercicio({ nome: 'Supino Inclinado', tipoMedicao: 'carga_kg' });
+  it('recusa carga numa esteira', () => {
+    const esteira = criarExercicio({ nome: 'Esteira', tipoMedicao: 'tempo' });
     const sessao = abrir('Treino C');
 
     assert.throws(() =>
       registrarSerie({
         sessaoId: sessao,
-        exercicioId: supino,
+        exercicioId: esteira,
         indice: 0,
-        carga: placa(5),
-        repeticoes: 10,
+        carga: kg(25000),
+        duracaoS: 600,
       })
     );
   });
 
   it('recusa série sem carga em exercício que tem carga', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const sessao = abrir('Treino A');
 
     assert.throws(() =>
@@ -286,37 +285,42 @@ describe('a trava exercício ↔ série', () => {
         sessaoId: sessao,
         exercicioId: abdominal,
         indice: 0,
-        carga: placa(1),
+        carga: kg(5000),
         repeticoes: 12,
       })
     );
   });
 
-  it('corrigir uma série gravada também revalida a unidade', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+  it('corrigir uma série gravada também revalida a compatibilidade', () => {
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const sessao = abrir('Treino A');
     const serie = registrarSerie({
       sessaoId: sessao,
       exercicioId: peck,
       indice: 0,
-      carga: placa(5),
+      carga: kg(25000),
       repeticoes: 10,
     });
 
-    corrigirSerie(serie, { carga: placa(6) });
+    corrigirSerie(serie, { carga: kg(30000) });
     assert.equal(
-      linha<{ carga_placas: number }>('select carga_placas from series where id = ?', serie)
-        .carga_placas,
-      6
+      linha<{ carga_g: number }>('select carga_g from series where id = ?', serie).carga_g,
+      30000
     );
 
-    assert.throws(() => corrigirSerie(serie, { carga: kg(30000) }));
+    // Tirar a carga de uma série de exercício COM carga é o mesmo erro que
+    // gravá-la assim na origem: a correção passa pela mesma trava.
+    assert.throws(() => corrigirSerie(serie, { carga: null }));
+    assert.equal(
+      linha<{ carga_g: number }>('select carga_g from series where id = ?', serie).carga_g,
+      30000
+    );
   });
 });
 
 describe('série', () => {
-  it('grava a carga na coluna da unidade e deixa a outra nula', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+  it('grava a carga na coluna, e NULL onde não há carga', () => {
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const supino = criarExercicio({ nome: 'Supino Inclinado', tipoMedicao: 'carga_kg' });
     const esteira = criarExercicio({ nome: 'Esteira', tipoMedicao: 'tempo' });
     const sessao = abrir('Treino A');
@@ -325,7 +329,7 @@ describe('série', () => {
       sessaoId: sessao,
       exercicioId: peck,
       indice: 0,
-      carga: placa(5),
+      carga: kg(25000),
       repeticoes: 10,
     });
     const emKg = registrarSerie({
@@ -343,29 +347,28 @@ describe('série', () => {
       duracaoS: 600,
     });
 
-    assert.deepEqual(linha('select carga_g, carga_placas from series where id = ?', emPlaca), {
-      carga_g: null,
-      carga_placas: 5,
+    assert.deepEqual(linha('select carga_g from series where id = ?', emPlaca), {
+      carga_g: 25000,
     });
-    assert.deepEqual(linha('select carga_g, carga_placas from series where id = ?', emKg), {
+    assert.deepEqual(linha('select carga_g from series where id = ?', emKg), {
       carga_g: 42500,
-      carga_placas: null,
     });
+    // NULL, e não zero: a esteira não levantou zero quilo, ela não levanta.
     assert.deepEqual(
-      linha('select carga_g, carga_placas, repeticoes, duracao_s from series where id = ?', emTempo),
-      { carga_g: null, carga_placas: null, repeticoes: null, duracao_s: 600 }
+      linha('select carga_g, repeticoes, duracao_s from series where id = ?', emTempo),
+      { carga_g: null, repeticoes: null, duracao_s: 600 }
     );
   });
 
   it('duplo toque no botão não vira duas séries no mesmo índice', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const sessao = abrir('Treino A');
     const gravar = () =>
       registrarSerie({
         sessaoId: sessao,
         exercicioId: peck,
         indice: 0,
-        carga: placa(5),
+        carga: kg(25000),
         repeticoes: 10,
       });
 
@@ -375,13 +378,13 @@ describe('série', () => {
   });
 
   it('desfazer arquiva sem apagar, e o índice continua ocupado', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const sessao = abrir('Treino A');
     const serie = registrarSerie({
       sessaoId: sessao,
       exercicioId: peck,
       indice: 0,
-      carga: placa(5),
+      carga: kg(25000),
       repeticoes: 10,
     });
 
@@ -400,14 +403,14 @@ describe('série', () => {
         sessaoId: sessao,
         exercicioId: peck,
         indice: 0,
-        carga: placa(5),
+        carga: kg(25000),
         repeticoes: 10,
       })
     );
   });
 
   it('registrar série toca o atualizado_em da sessão', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const sessao = abrir('Treino A');
     const antes = linha<{ atualizado_em: number }>(
       'select atualizado_em from sessoes where id = ?',
@@ -419,7 +422,7 @@ describe('série', () => {
       sessaoId: sessao,
       exercicioId: peck,
       indice: 0,
-      carga: placa(5),
+      carga: kg(25000),
       repeticoes: 10,
     });
 
@@ -431,14 +434,14 @@ describe('série', () => {
   });
 
   it('confirmarSerie grava o esforço que o domínio sugeriu', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const sessao = abrir('Treino A');
 
     const serie = confirmarSerie(sessao, {
       exercicioId: peck,
       indice: 2,
       tipo: 'valida',
-      carga: placa(6),
+      carga: kg(30000),
       repeticoes: 10,
       duracaoS: null,
       origemCarga: 'ajuste_de_hoje',
@@ -446,8 +449,8 @@ describe('série', () => {
     });
 
     assert.deepEqual(
-      linha('select tipo, carga_placas, repeticoes, rir from series where id = ?', serie),
-      { tipo: 'valida', carga_placas: 6, repeticoes: 10, rir: null }
+      linha('select tipo, carga_g, repeticoes, rir from series where id = ?', serie),
+      { tipo: 'valida', carga_g: 30000, repeticoes: 10, rir: null }
     );
   });
 
@@ -457,14 +460,14 @@ describe('série', () => {
    * SQL aparecia na cara dele no meio da série.
    */
   it('confirmarSerie IGNORA o índice da tela — ele é sempre do render anterior', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const sessao = abrir('Treino A');
 
     const sugerida = {
       exercicioId: peck,
       indice: 7, // número absurdo de propósito: a tela não manda mais no índice
       tipo: 'valida' as const,
-      carga: placa(5),
+      carga: kg(25000),
       repeticoes: 10,
       duracaoS: null,
       origemCarga: 'plano' as const,
@@ -476,14 +479,14 @@ describe('série', () => {
   });
 
   it('toque duplo com o mesmo índice não estoura o UNIQUE — grava 0 e 1', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const sessao = abrir('Treino A');
 
     const sugerida = {
       exercicioId: peck,
       indice: 0,
       tipo: 'valida' as const,
-      carga: placa(5),
+      carga: kg(25000),
       repeticoes: 10,
       duracaoS: null,
       origemCarga: 'plano' as const,
@@ -498,13 +501,13 @@ describe('série', () => {
   });
 
   it('depois de desfazer, o índice não volta — o slot desfeito continua ocupado', () => {
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const sessao = abrir('Treino A');
     const sugerida = {
       exercicioId: peck,
       indice: 0,
       tipo: 'valida' as const,
-      carga: placa(5),
+      carga: kg(25000),
       repeticoes: 10,
       duracaoS: null,
       origemCarga: 'plano' as const,
@@ -521,10 +524,10 @@ describe('série', () => {
 });
 
 describe('ficha', () => {
-  it('grava a carga-alvo na coluna da unidade e recusa a unidade errada', () => {
+  it('grava a carga-alvo e recusa carga em exercício que não tem carga', () => {
     const treino = criarTreino({ nome: 'Treino A' });
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
-    const supino = criarExercicio({ nome: 'Supino Inclinado', tipoMedicao: 'carga_kg' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
+    const abdominal = criarExercicio({ nome: 'Abdominal Supra Solo', tipoMedicao: 'peso_corporal' });
 
     const item = definirItemDoTreino({
       treinoId: treino,
@@ -533,27 +536,26 @@ describe('ficha', () => {
       seriesAlvo: 4,
       repsAlvoMin: 10,
       repsAlvoMax: 10,
-      cargaAlvo: placa(4),
+      cargaAlvo: kg(20000),
     });
-    assert.deepEqual(
-      linha('select carga_alvo_g, carga_alvo_placas from treino_exercicios where id = ?', item),
-      { carga_alvo_g: null, carga_alvo_placas: 4 }
-    );
+    assert.deepEqual(linha('select carga_alvo_g from treino_exercicios where id = ?', item), {
+      carga_alvo_g: 20000,
+    });
 
     assert.throws(() =>
       definirItemDoTreino({
         treinoId: treino,
-        exercicioId: supino,
+        exercicioId: abdominal,
         ordem: 1,
         seriesAlvo: 4,
-        cargaAlvo: placa(5),
+        cargaAlvo: kg(25000),
       })
     );
   });
 
   it('item sem carga-alvo é legítimo, inclusive em exercício com carga', () => {
     const treino = criarTreino({ nome: 'Treino A' });
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
 
     const item = definirItemDoTreino({
       treinoId: treino,
@@ -563,57 +565,57 @@ describe('ficha', () => {
     });
 
     assert.deepEqual(
-      linha('select carga_alvo_g, carga_alvo_placas from treino_exercicios where id = ?', item),
-      { carga_alvo_g: null, carga_alvo_placas: null }
+      linha('select carga_alvo_g from treino_exercicios where id = ?', item),
+      { carga_alvo_g: null }
     );
   });
 
   it('definirCargaAlvo é o único caminho que muda a carga da ficha, e aceita limpar', () => {
     const treino = criarTreino({ nome: 'Treino A' });
-    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const peck = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const item = definirItemDoTreino({
       treinoId: treino,
       exercicioId: peck,
       ordem: 0,
       seriesAlvo: 4,
-      cargaAlvo: placa(5),
+      cargaAlvo: kg(25000),
     });
 
-    definirCargaAlvo(item, placa(6));
+    definirCargaAlvo(item, kg(30000));
     assert.equal(
-      linha<{ carga_alvo_placas: number }>(
-        'select carga_alvo_placas from treino_exercicios where id = ?',
+      linha<{ carga_alvo_g: number }>(
+        'select carga_alvo_g from treino_exercicios where id = ?',
         item
-      ).carga_alvo_placas,
-      6
+      ).carga_alvo_g,
+      30000
     );
 
     // `atualizarItemDoTreino` não tem por onde tocar na carga: é o que impede a
     // ficha de mudar como efeito colateral de mexer no descanso.
     atualizarItemDoTreino(item, { descansoS: 120, seriesAlvo: 5 });
     assert.equal(
-      linha<{ carga_alvo_placas: number }>(
-        'select carga_alvo_placas from treino_exercicios where id = ?',
+      linha<{ carga_alvo_g: number }>(
+        'select carga_alvo_g from treino_exercicios where id = ?',
         item
-      ).carga_alvo_placas,
-      6
+      ).carga_alvo_g,
+      30000
     );
 
     definirCargaAlvo(item, null);
     assert.equal(
-      linha<{ carga_alvo_placas: number | null }>(
-        'select carga_alvo_placas from treino_exercicios where id = ?',
+      linha<{ carga_alvo_g: number | null }>(
+        'select carga_alvo_g from treino_exercicios where id = ?',
         item
-      ).carga_alvo_placas,
+      ).carga_alvo_g,
       null
     );
   });
 
   it('reordena numa transação e remove item por soft delete', () => {
     const treino = criarTreino({ nome: 'Treino A' });
-    const a = criarExercicio({ nome: 'Remada Alta', tipoMedicao: 'carga_placa' });
-    const b = criarExercicio({ nome: 'Facepull', tipoMedicao: 'carga_placa' });
-    const c = criarExercicio({ nome: 'Rosca Direta', tipoMedicao: 'carga_placa' });
+    const a = criarExercicio({ nome: 'Remada Alta', tipoMedicao: 'carga_kg' });
+    const b = criarExercicio({ nome: 'Facepull', tipoMedicao: 'carga_kg' });
+    const c = criarExercicio({ nome: 'Rosca Direta', tipoMedicao: 'carga_kg' });
     const itens = [a, b, c].map((exercicioId, ordem) =>
       definirItemDoTreino({ treinoId: treino, exercicioId, ordem, seriesAlvo: 4 })
     );
@@ -641,7 +643,7 @@ describe('ficha', () => {
 
   it('arquivarTreino some da lista e NÃO cascateia nos itens', () => {
     const treino = criarTreino({ nome: 'Treino A' });
-    const exercicioId = criarExercicio({ nome: 'Remada Alta', tipoMedicao: 'carga_placa' });
+    const exercicioId = criarExercicio({ nome: 'Remada Alta', tipoMedicao: 'carga_kg' });
     definirItemDoTreino({ treinoId: treino, exercicioId, ordem: 0, seriesAlvo: 4 });
 
     arquivarTreino(treino);

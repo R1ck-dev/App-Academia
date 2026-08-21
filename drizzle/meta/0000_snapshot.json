@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "2694308b-ece5-4c2c-afa2-cb3ff40e4301",
+  "id": "25c79fce-1abf-4c4f-b0df-345963115f3a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "exercicios": {
@@ -44,20 +44,6 @@
         },
         "incremento_g": {
           "name": "incremento_g",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "incremento_placas": {
-          "name": "incremento_placas",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "gramas_por_placa": {
-          "name": "gramas_por_placa",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -107,15 +93,11 @@
       "checkConstraints": {
         "ck_exercicios_tipo": {
           "name": "ck_exercicios_tipo",
-          "value": "\"exercicios\".\"tipo_medicao\" in ('carga_kg', 'carga_placa', 'peso_corporal', 'tempo', 'distancia')"
+          "value": "\"exercicios\".\"tipo_medicao\" in ('carga_kg', 'peso_corporal', 'tempo', 'distancia')"
         },
         "ck_exercicios_incremento": {
           "name": "ck_exercicios_incremento",
-          "value": "(\"exercicios\".\"tipo_medicao\" = 'carga_kg' and \"exercicios\".\"incremento_g\" > 0 and \"exercicios\".\"incremento_placas\" is null)\n       or (\"exercicios\".\"tipo_medicao\" = 'carga_placa' and \"exercicios\".\"incremento_placas\" between 1 and 5 and \"exercicios\".\"incremento_g\" is null)\n       or (\"exercicios\".\"tipo_medicao\" in ('peso_corporal', 'tempo', 'distancia') and \"exercicios\".\"incremento_g\" is null and \"exercicios\".\"incremento_placas\" is null)"
-        },
-        "ck_exercicios_placa": {
-          "name": "ck_exercicios_placa",
-          "value": "\"exercicios\".\"gramas_por_placa\" is null or (\"exercicios\".\"tipo_medicao\" = 'carga_placa' and \"exercicios\".\"gramas_por_placa\" > 0)"
+          "value": "(\"exercicios\".\"tipo_medicao\" = 'carga_kg' and \"exercicios\".\"incremento_g\" is not null and \"exercicios\".\"incremento_g\" > 0)\n       or (\"exercicios\".\"tipo_medicao\" in ('peso_corporal', 'tempo', 'distancia') and \"exercicios\".\"incremento_g\" is null)"
         }
       }
     },
@@ -417,13 +399,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "carga_placas": {
-          "name": "carga_placas",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "repeticoes": {
           "name": "repeticoes",
           "type": "integer",
@@ -524,13 +499,9 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {
-        "ck_series_uma_unidade": {
-          "name": "ck_series_uma_unidade",
-          "value": "\"series\".\"carga_g\" is null or \"series\".\"carga_placas\" is null"
-        },
         "ck_series_carga_positiva": {
           "name": "ck_series_carga_positiva",
-          "value": "(\"series\".\"carga_g\" is null or \"series\".\"carga_g\" > 0) and (\"series\".\"carga_placas\" is null or \"series\".\"carga_placas\" > 0)"
+          "value": "\"series\".\"carga_g\" is null or \"series\".\"carga_g\" > 0"
         },
         "ck_series_tipo": {
           "name": "ck_series_tipo",
@@ -723,13 +694,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "carga_alvo_placas": {
-          "name": "carga_alvo_placas",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "duracao_alvo_s": {
           "name": "duracao_alvo_s",
           "type": "integer",
@@ -815,13 +779,9 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {
-        "ck_te_uma_unidade": {
-          "name": "ck_te_uma_unidade",
-          "value": "\"treino_exercicios\".\"carga_alvo_g\" is null or \"treino_exercicios\".\"carga_alvo_placas\" is null"
-        },
         "ck_te_carga_positiva": {
           "name": "ck_te_carga_positiva",
-          "value": "(\"treino_exercicios\".\"carga_alvo_g\" is null or \"treino_exercicios\".\"carga_alvo_g\" > 0) and (\"treino_exercicios\".\"carga_alvo_placas\" is null or \"treino_exercicios\".\"carga_alvo_placas\" > 0)"
+          "value": "\"treino_exercicios\".\"carga_alvo_g\" is null or \"treino_exercicios\".\"carga_alvo_g\" > 0"
         },
         "ck_te_series_alvo": {
           "name": "ck_te_series_alvo",

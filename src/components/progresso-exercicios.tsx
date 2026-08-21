@@ -19,9 +19,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { GraficoDeProgressao, type PontoDoGrafico } from '@/components/progresso-grafico';
 import { cor, espaco, margem, raio, tipo } from '@/constants/tema';
-import { formatarCarga, formatarCargaAproximada, formatarPeso } from '@/dominio/carga';
+import { formatarCarga, formatarPeso } from '@/dominio/carga';
 import { formatarData, formatarDuracao } from '@/dominio/datas';
-import { calibrado, temCarga, unidadeDoTipo, type Exercicio } from '@/dominio/exercicio';
+import { rotuloDoTipoMedicao, temCarga, type Exercicio } from '@/dominio/exercicio';
 import { calcularRecordes, type HistoricoDoExercicio, type Recordes } from '@/dominio/recordes';
 import {
   formatarVolumeNaUnidade,
@@ -43,6 +43,13 @@ export function ChipsDeExercicio({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      // `flexGrow: 0` é o conserto de um bug de verdade, não enfeite: o
+      // `ScrollView` horizontal do RN nasce com `flexGrow: 1`, e como esta fila
+      // é filha direta da coluna da tela, ela disputava a altura livre com a
+      // rolagem de baixo e ficava com meia tela. O `contentContainer` é uma row
+      // com `alignItems: 'stretch'`, então cada chip esticava junto e virava
+      // uma pílula gigante com o texto encostado no topo.
+      style={estilos.fila}
       contentContainerStyle={estilos.chips}
     >
       {exercicios.map((ex) => {
@@ -66,12 +73,10 @@ export function ChipsDeExercicio({
 export function ProgressoDoExercicio({
   historico,
   alvoDaFicha,
-  aoCalibrar,
 }: {
   historico: HistoricoDoExercicio;
-  /** "3×10 · 2 placas" — o que a ficha manda, para o exercício nunca registrado. */
+  /** "3×10 · 20 kg" — o que a ficha manda, para o exercício nunca registrado. */
   alvoDaFicha?: string | null;
-  aoCalibrar: () => void;
 }) {
   const ex = historico.exercicio;
   const pontos = progressaoDoExercicio(historico);
@@ -115,32 +120,6 @@ export function ProgressoDoExercicio({
         ))}
       </View>
 
-      {ex.tipoMedicao !== 'carga_placa' ? null : calibrado(ex) ? (
-        <View style={estilos.blocoDeCalibracao}>
-          <Text style={estilos.calibracaoTitulo}>
-            Cada placa: {formatarPeso(ex.gramasPorPlaca ?? 0)}
-          </Text>
-          <Text style={estilos.calibracaoTexto}>
-            {recordes.maiorCarga === null
-              ? 'O histórico deste exercício ganha uma leitura em quilos.'
-              : `Maior carga: ${formatarCargaAproximada(recordes.maiorCarga, ex.gramasPorPlaca)}.`}
-          </Text>
-          <Pressable onPress={aoCalibrar} hitSlop={10}>
-            <Text style={estilos.descalibrar}>mudar</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View style={estilos.blocoDeCalibracao}>
-          <Text style={estilos.calibracaoTitulo}>Sabe quanto pesa cada placa?</Text>
-          <Text style={estilos.calibracaoTexto}>O histórico ganha uma leitura em quilos.</Text>
-          <Pressable
-            style={({ pressed }) => [estilos.botaoDeCalibrar, pressed && estilos.botaoPressionado]}
-            onPress={aoCalibrar}
-          >
-            <Text style={estilos.botaoDeCalibrarTexto}>Calibrar a placa</Text>
-          </Pressable>
-        </View>
-      )}
     </View>
   );
 }
@@ -148,13 +127,8 @@ export function ProgressoDoExercicio({
 // ── Texto ──────────────────────────────────────────────────────────────────
 
 function textoDaMedida(ex: Exercicio, sessoes: number, series: number): string {
-  const unidade = unidadeDoTipo(ex.tipoMedicao);
   const medida =
-    unidade === null
-      ? ex.tipoMedicao === 'tempo'
-        ? 'medido em tempo'
-        : 'peso corporal'
-      : `medido em ${unidade}`;
+    ex.tipoMedicao === 'peso_corporal' ? 'peso corporal' : `medido em ${rotuloDoTipoMedicao(ex.tipoMedicao)}`;
   const s = sessoes === 1 ? 'sessão' : 'sessões';
   const t = series === 1 ? 'série' : 'séries';
   return `${medida} · ${sessoes} ${s} · ${series} ${t}`;
@@ -169,7 +143,6 @@ function rotuloDoEixo(ex: Exercicio): string {
 /** O eixo fala a unidade do exercício, e só ela. */
 function formatarDoEixo(ex: Exercicio, valor: number): string {
   if (ex.tipoMedicao === 'carga_kg') return formatarPeso(Math.round(valor));
-  if (ex.tipoMedicao === 'carga_placa') return String(Math.round(valor * 10) / 10);
   if (ex.tipoMedicao === 'tempo') return formatarDuracao(Math.round(valor));
   return String(Math.round(valor));
 }
@@ -182,29 +155,18 @@ function linhasDeRecorde(ex: Exercicio, r: Recordes): LinhaDeRecorde[] {
   if (temCarga(ex.tipoMedicao)) {
     linhas.push({
       rotulo: 'Maior carga',
-      valor:
-        r.maiorCarga === null
-          ? 'sem registro'
-          : formatarCargaAproximada(r.maiorCarga, ex.gramasPorPlaca),
+      valor: r.maiorCarga === null ? 'sem registro' : formatarCarga(r.maiorCarga),
       ausente: r.maiorCarga === null,
     });
   }
 
   if (r.maior1RM === null) {
-    linhas.push({
-      rotulo: '1RM estimado',
-      valor:
-        ex.tipoMedicao === 'carga_placa' && !calibrado(ex)
-          ? 'não existe em placa sem calibração'
-          : 'sem registro',
-      ausente: true,
-    });
+    linhas.push({ rotulo: '1RM estimado', valor: 'sem registro', ausente: true });
   } else {
-    const til = r.umRMAproximado ? '~' : '';
     const ressalva = r.maior1RM.confiavel ? '' : ' · estimativa fraca';
     linhas.push({
       rotulo: '1RM estimado',
-      valor: `${til}${formatarCarga(r.maior1RM.carga)}${ressalva}`,
+      valor: `${formatarCarga(r.maior1RM.carga)}${ressalva}`,
     });
   }
 
@@ -237,7 +199,13 @@ function linhasDeRecorde(ex: Exercicio, r: Recordes): LinhaDeRecorde[] {
 }
 
 const estilos = StyleSheet.create({
-  chips: { gap: 7, paddingHorizontal: margem.listaDeCartoes, paddingVertical: espaco.dois },
+  fila: { flexGrow: 0 },
+  chips: {
+    gap: 7,
+    paddingHorizontal: margem.listaDeCartoes,
+    paddingVertical: espaco.dois,
+    alignItems: 'center',
+  },
   chip: {
     borderRadius: raio.pilula,
     borderWidth: 2,
@@ -281,25 +249,4 @@ const estilos = StyleSheet.create({
   recordeRotulo: { ...tipo.corpoMenor, color: cor.textoSecundario, flexShrink: 1 },
   recordeValor: { ...tipo.corpoMenor, color: cor.texto, textAlign: 'right', flexShrink: 1 },
   recordeAusente: { ...tipo.corpoMenor, color: cor.textoTerciario, textAlign: 'right', flexShrink: 1 },
-
-  blocoDeCalibracao: {
-    marginTop: espaco.seis,
-    padding: espaco.quatro,
-    borderRadius: raio.container,
-    backgroundColor: cor.infoTinta,
-    gap: espaco.um,
-  },
-  calibracaoTitulo: { ...tipo.rotuloForte, color: cor.texto },
-  calibracaoTexto: { ...tipo.meta, fontSize: 12.5, color: cor.infoTintaTexto },
-  botaoDeCalibrar: {
-    height: 46,
-    borderRadius: raio.pilula,
-    backgroundColor: cor.info,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: espaco.dois,
-  },
-  botaoPressionado: { backgroundColor: cor.infoPressionada },
-  botaoDeCalibrarTexto: { ...tipo.rotuloForte, color: cor.sobreAcao },
-  descalibrar: { ...tipo.rotuloCompacto, color: cor.infoTintaTexto, marginTop: espaco.dois },
 });

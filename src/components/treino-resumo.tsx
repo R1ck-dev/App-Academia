@@ -23,7 +23,7 @@ import { motivoCurto } from '@/components/treino-texto';
 import { alvo, cor, espaco, margem, raio, tipo } from '@/constants/tema';
 import { definirCargaAlvo } from '@/db/mutations';
 import { historicoDoExercicio, planoDaSessao, seriesDaSessaoComExercicio } from '@/db/queries';
-import { formatarCarga, formatarVolume, valorDaCarga, type Carga } from '@/dominio/carga';
+import { formatarCarga, formatarVolume, type Carga } from '@/dominio/carga';
 import { formatarDuracao } from '@/dominio/datas';
 import { divergenciasDoPlano, type Divergencia, type PlanoDaSessao } from '@/dominio/execucao';
 import { calcularRecordes, novoRecorde } from '@/dominio/recordes';
@@ -67,7 +67,6 @@ export function ResumoDaSessao({
   }
 
   const { volume } = resumo;
-  const aproximado = volume.gramasRepsAproximados > 0;
 
   return (
     <SafeAreaView style={estilos.area} edges={['top', 'left', 'right']}>
@@ -78,12 +77,7 @@ export function ResumoDaSessao({
             {resumo.duracaoS === null ? '' : ` · ${formatarDuracao(resumo.duracaoS)}`}
           </Text>
           <Text style={estilos.titulo}>Terminado</Text>
-          {/* O til não é preciosismo: parte deste total veio de placa convertida,
-              e a conversão assume uma proporcionalidade que alavanca não garante. */}
-          <Text style={estilos.volume}>
-            {aproximado ? '~' : ''}
-            {formatarVolume(volume.gramasReps)}
-          </Text>
+          <Text style={estilos.volume}>{formatarVolume(volume.gramasReps)}</Text>
           <Text style={estilos.volumeSub}>{textoDoVolume(volume)}</Text>
         </View>
 
@@ -213,19 +207,19 @@ function montarResumo(sessaoId: string): Resumo | null {
 /**
  * "6 placas em 2 séries, 8 placas em 1 série" — o que ele fez, como aconteceu.
  *
- * Um número só ("6 placas") esconderia que a última série subiu, que é
- * exatamente a informação que decide se vale mudar a ficha.
+ * Um número só ("30 kg") esconderia que a última série subiu, que é exatamente
+ * a informação que decide se vale mudar a ficha.
  */
 function cargasComoAconteceram(feitas: readonly { carga: Carga | null; tipo: string }[]): string {
   const contagem = new Map<string, { carga: Carga; series: number }>();
   for (const s of feitas) {
     if (s.tipo === 'aquecimento' || s.carga === null) continue;
-    const chave = `${s.carga.unidade}:${valorDaCarga(s.carga)}`;
+    const chave = String(s.carga.gramas);
     const atual = contagem.get(chave);
     contagem.set(chave, { carga: s.carga, series: (atual?.series ?? 0) + 1 });
   }
   const partes = [...contagem.values()]
-    .sort((a, b) => valorDaCarga(a.carga) - valorDaCarga(b.carga))
+    .sort((a, b) => a.carga.gramas - b.carga.gramas)
     .map((c) => `${formatarCarga(c.carga)} em ${c.series} ${c.series === 1 ? 'série' : 'séries'}`);
   return partes.length === 0 ? 'as séries de hoje' : partes.join(', ');
 }
@@ -273,11 +267,8 @@ function textoDoRecorde(r: RecordeBatido): string {
   return partes.join(', ');
 }
 
-/** "12 séries somadas · 8 vieram de placa convertida". */
 function textoDoVolume(v: VolumeDaSessao): string {
-  const base = `${v.seriesSomadas} ${v.seriesSomadas === 1 ? 'série somada' : 'séries somadas'}`;
-  if (v.seriesAproximadas === 0) return base;
-  return `${base} · ${v.seriesAproximadas} de placa convertida`;
+  return `${v.seriesSomadas} ${v.seriesSomadas === 1 ? 'série somada' : 'séries somadas'}`;
 }
 
 const estilos = StyleSheet.create({

@@ -2,7 +2,15 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { TipoMedicao, TipoSerie } from '../db/schema.ts';
-import { kg, placa, valorDaCarga, type Carga } from './carga.ts';
+import { INCREMENTO_PADRAO, kg, type Carga } from './carga.ts';
+
+/**
+ * O Peck Dorsal já foi medido em placas, e estes testes falavam em "5 placas".
+ * Placa saiu do app; o que os casos afirmam continua sendo relativo — subiu um
+ * degrau, manteve, ficou atrás da ficha —, então um degrau vira o incremento
+ * padrão em quilo e cada asserção segue dizendo a mesma coisa.
+ */
+const degraus = (quantos: number): Carga => kg(quantos * INCREMENTO_PADRAO);
 import { incrementoPadrao, type Exercicio } from './exercicio.ts';
 import {
   divergenciasDoPlano,
@@ -30,12 +38,11 @@ function exercicio(id: string, tipoMedicao: TipoMedicao, nome = id): Exercicio {
     grupoMuscular: null,
     tipoMedicao,
     incremento: incrementoPadrao(tipoMedicao),
-    gramasPorPlaca: null,
     arquivadoEm: null,
   };
 }
 
-const PECK = exercicio('ex-peck', 'carga_placa', 'Peck Dorsal');
+const PECK = exercicio('ex-peck', 'carga_kg', 'Peck Dorsal');
 const SUPINO = exercicio('ex-supino', 'carga_kg', 'Supino Inclinado');
 const ABDOMINAL = exercicio('ex-abd', 'peso_corporal', 'Abdominal Supra Solo');
 const ESTEIRA = exercicio('ex-esteira', 'tempo', 'Esteira');
@@ -129,69 +136,69 @@ describe('proximoIndice', () => {
 describe('cadeia da carga', () => {
   it('degrau 1: repete o ajuste feito HOJE, e as séries seguintes voltam a 1 toque', () => {
     const s = proxima({
-      item: item({ exercicio: PECK, cargaAlvo: placa(5), repsAlvoMax: 10 }),
+      item: item({ exercicio: PECK, cargaAlvo: degraus(5), repsAlvoMax: 10 }),
       feitasHoje: [
-        serie({ exercicioId: PECK.id, indice: 0, carga: placa(5), repeticoes: 10 }),
-        serie({ exercicioId: PECK.id, indice: 1, carga: placa(6), repeticoes: 10 }),
+        serie({ exercicioId: PECK.id, indice: 0, carga: degraus(5), repeticoes: 10 }),
+        serie({ exercicioId: PECK.id, indice: 1, carga: degraus(6), repeticoes: 10 }),
       ],
     });
 
-    assert.deepEqual(s.carga, placa(6));
+    assert.deepEqual(s.carga, degraus(6));
     assert.equal(s.origemCarga, 'ajuste_de_hoje');
     assert.equal(s.indice, 2);
   });
 
   it('degrau 1 ignora aquecimento: herdar a carga leve baixaria a régua sozinho', () => {
     const s = proxima({
-      item: item({ exercicio: PECK, cargaAlvo: placa(5) }),
+      item: item({ exercicio: PECK, cargaAlvo: degraus(5) }),
       feitasHoje: [
-        serie({ exercicioId: PECK.id, indice: 0, tipo: 'aquecimento', carga: placa(3), repeticoes: 15 }),
+        serie({ exercicioId: PECK.id, indice: 0, tipo: 'aquecimento', carga: degraus(3), repeticoes: 15 }),
       ],
     });
 
-    assert.deepEqual(s.carga, placa(5));
+    assert.deepEqual(s.carga, degraus(5));
     assert.equal(s.origemCarga, 'plano');
     assert.equal(s.indice, 1);
   });
 
   it('degrau 1 não enxerga a série do exercício vizinho', () => {
     const s = proxima({
-      item: item({ exercicio: PECK, cargaAlvo: placa(5) }),
+      item: item({ exercicio: PECK, cargaAlvo: degraus(5) }),
       feitasHoje: [serie({ exercicioId: SUPINO.id, indice: 0, carga: kg(40000), repeticoes: 10 })],
       indicesOcupados: [],
     });
 
-    assert.deepEqual(s.carga, placa(5));
+    assert.deepEqual(s.carga, degraus(5));
     assert.equal(s.origemCarga, 'plano');
   });
 
   it('degrau 2 é ANTI-CATRACA: 6,6,5,5 volta abrindo em 6, não em 5', () => {
     const anterior = [
-      serie({ exercicioId: PECK.id, indice: 0, carga: placa(6), repeticoes: 10, sessaoId: 'sessao-semana-passada' }),
-      serie({ exercicioId: PECK.id, indice: 1, carga: placa(6), repeticoes: 10, sessaoId: 'sessao-semana-passada' }),
-      serie({ exercicioId: PECK.id, indice: 2, carga: placa(5), repeticoes: 9, sessaoId: 'sessao-semana-passada' }),
-      serie({ exercicioId: PECK.id, indice: 3, carga: placa(5), repeticoes: 8, sessaoId: 'sessao-semana-passada' }),
+      serie({ exercicioId: PECK.id, indice: 0, carga: degraus(6), repeticoes: 10, sessaoId: 'sessao-semana-passada' }),
+      serie({ exercicioId: PECK.id, indice: 1, carga: degraus(6), repeticoes: 10, sessaoId: 'sessao-semana-passada' }),
+      serie({ exercicioId: PECK.id, indice: 2, carga: degraus(5), repeticoes: 9, sessaoId: 'sessao-semana-passada' }),
+      serie({ exercicioId: PECK.id, indice: 3, carga: degraus(5), repeticoes: 8, sessaoId: 'sessao-semana-passada' }),
     ];
     const hoje = item({ exercicio: PECK, seriesAlvo: 4, repsAlvoMax: 10 });
 
     const primeira = proxima({ item: hoje, sessaoAnterior: anterior });
-    assert.deepEqual(primeira.carga, placa(6));
+    assert.deepEqual(primeira.carga, degraus(6));
     assert.equal(primeira.origemCarga, 'mesmo_indice_sessao_anterior');
 
     // E a queda por fadiga reaparece na POSIÇÃO em que aconteceu.
     const terceira = proxima({ item: hoje, sessaoAnterior: anterior, indicesOcupados: [0, 1] });
-    assert.deepEqual(terceira.carga, placa(5));
+    assert.deepEqual(terceira.carga, degraus(5));
     assert.equal(terceira.origemCarga, 'mesmo_indice_sessao_anterior');
   });
 
   it('degrau 2 perde para o ajuste de hoje assim que existe ajuste de hoje', () => {
     const s = proxima({
-      item: item({ exercicio: PECK, cargaAlvo: placa(5) }),
-      feitasHoje: [serie({ exercicioId: PECK.id, indice: 0, carga: placa(7), repeticoes: 10 })],
-      sessaoAnterior: [serie({ exercicioId: PECK.id, indice: 1, carga: placa(6), repeticoes: 10 })],
+      item: item({ exercicio: PECK, cargaAlvo: degraus(5) }),
+      feitasHoje: [serie({ exercicioId: PECK.id, indice: 0, carga: degraus(7), repeticoes: 10 })],
+      sessaoAnterior: [serie({ exercicioId: PECK.id, indice: 1, carga: degraus(6), repeticoes: 10 })],
     });
 
-    assert.deepEqual(s.carga, placa(7));
+    assert.deepEqual(s.carga, degraus(7));
     assert.equal(s.origemCarga, 'ajuste_de_hoje');
   });
 
@@ -209,12 +216,15 @@ describe('cadeia da carga', () => {
     assert.equal(s.origemCarga, 'sem_referencia');
   });
 
-  it('carga de unidade incompatível é descartada em vez de virar toque recusado', () => {
-    // Cenário do exercício que mudou de unidade: `registrarSerie` lançaria em
-    // cima de um prefill em kg num exercício de placa.
+  it('carga incompatível com o exercício é descartada em vez de virar toque recusado', () => {
+    // Cenário do exercício que mudou de tipo: com uma carga vinda da ficha ou do
+    // histórico, `registrarSerie` lançaria em cima de um prefill que ela recusa.
+    // Descartar aqui é o que faz o toque continuar existindo.
     const s = proxima({
-      item: item({ exercicio: PECK, cargaAlvo: kg(40000) }),
-      sessaoAnterior: [serie({ exercicioId: PECK.id, indice: 0, carga: kg(40000), repeticoes: 10 })],
+      item: item({ exercicio: ABDOMINAL, cargaAlvo: kg(40000) }),
+      sessaoAnterior: [
+        serie({ exercicioId: ABDOMINAL.id, indice: 0, carga: kg(40000), repeticoes: 10 }),
+      ],
     });
 
     assert.equal(s.carga, null);
@@ -225,14 +235,14 @@ describe('cadeia da carga', () => {
 describe('cadeia das repetições — invertida de propósito', () => {
   it('reps vêm SEMPRE do plano: fez 8 na semana passada, hoje o alvo continua 10', () => {
     const s = proxima({
-      item: item({ exercicio: PECK, cargaAlvo: placa(5), seriesAlvo: 4, repsAlvoMax: 10 }),
-      sessaoAnterior: [serie({ exercicioId: PECK.id, indice: 0, carga: placa(5), repeticoes: 8 })],
+      item: item({ exercicio: PECK, cargaAlvo: degraus(5), seriesAlvo: 4, repsAlvoMax: 10 }),
+      sessaoAnterior: [serie({ exercicioId: PECK.id, indice: 0, carga: degraus(5), repeticoes: 8 })],
     });
 
     assert.equal(s.repeticoes, 10);
     assert.equal(s.origemReps, 'plano');
     // A carga, essa sim, herda o histórico — as duas cadeias andam separadas.
-    assert.deepEqual(s.carga, placa(5));
+    assert.deepEqual(s.carga, degraus(5));
     assert.equal(s.origemCarga, 'mesmo_indice_sessao_anterior');
   });
 
@@ -246,8 +256,8 @@ describe('cadeia das repetições — invertida de propósito', () => {
 
   it('sem plano de reps, cai no mesmo índice da sessão anterior', () => {
     const s = proxima({
-      item: item({ exercicio: PECK, cargaAlvo: placa(5) }),
-      sessaoAnterior: [serie({ exercicioId: PECK.id, indice: 0, carga: placa(5), repeticoes: 9 })],
+      item: item({ exercicio: PECK, cargaAlvo: degraus(5) }),
+      sessaoAnterior: [serie({ exercicioId: PECK.id, indice: 0, carga: degraus(5), repeticoes: 9 })],
     });
 
     assert.equal(s.repeticoes, 9);
@@ -255,7 +265,7 @@ describe('cadeia das repetições — invertida de propósito', () => {
   });
 
   it('sem plano e sem histórico, reps ficam nulas', () => {
-    const s = proxima({ item: item({ exercicio: PECK, cargaAlvo: placa(5) }) });
+    const s = proxima({ item: item({ exercicio: PECK, cargaAlvo: degraus(5) }) });
     assert.equal(s.repeticoes, null);
     assert.equal(s.origemReps, 'sem_referencia');
   });
@@ -295,7 +305,7 @@ describe('exercício sem carga e exercício de tempo', () => {
 });
 
 describe('montarPlanoDaSessao', () => {
-  const peck = item({ exercicio: PECK, itemId: 'te-1', ordem: 0, seriesAlvo: 4, repsAlvoMax: 10, cargaAlvo: placa(5) });
+  const peck = item({ exercicio: PECK, itemId: 'te-1', ordem: 0, seriesAlvo: 4, repsAlvoMax: 10, cargaAlvo: degraus(5) });
   const supino = item({ exercicio: SUPINO, itemId: 'te-2', ordem: 1, seriesAlvo: 3, repsAlvoMax: 10, cargaAlvo: kg(40000) });
 
   function plano(feitas: readonly SerieExecutada[], ocupados?: Map<string, readonly number[]>) {
@@ -321,9 +331,9 @@ describe('montarPlanoDaSessao', () => {
 
   it('aquecimento não abate o alvo: 2 aquecimentos + 1 válida num 4×10 deixa 3 faltando', () => {
     const p = plano([
-      serie({ exercicioId: PECK.id, indice: 0, tipo: 'aquecimento', carga: placa(3), repeticoes: 15 }),
-      serie({ exercicioId: PECK.id, indice: 1, tipo: 'aquecimento', carga: placa(4), repeticoes: 12 }),
-      serie({ exercicioId: PECK.id, indice: 2, carga: placa(6), repeticoes: 10 }),
+      serie({ exercicioId: PECK.id, indice: 0, tipo: 'aquecimento', carga: degraus(3), repeticoes: 15 }),
+      serie({ exercicioId: PECK.id, indice: 1, tipo: 'aquecimento', carga: degraus(4), repeticoes: 12 }),
+      serie({ exercicioId: PECK.id, indice: 2, carga: degraus(6), repeticoes: 10 }),
     ]);
     const item0 = p.itens[0];
 
@@ -335,7 +345,7 @@ describe('montarPlanoDaSessao', () => {
   });
 
   it('fez 3 de 4: falta 1 e o cartão aberto continua sendo o dele', () => {
-    const p = plano([0, 1, 2].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: placa(5), repeticoes: 10 })));
+    const p = plano([0, 1, 2].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: degraus(5), repeticoes: 10 })));
 
     assert.equal(p.itens[0].faltam, 1);
     assert.equal(p.itemAtual?.itemId, 'te-1');
@@ -345,13 +355,13 @@ describe('montarPlanoDaSessao', () => {
   });
 
   it('itemAtual anda para o próximo quando o alvo fecha, e o item completo ainda oferece série extra', () => {
-    const p = plano([0, 1, 2, 3].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: placa(5), repeticoes: 10 })));
+    const p = plano([0, 1, 2, 3].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: degraus(5), repeticoes: 10 })));
     const item0 = p.itens[0];
 
     assert.equal(item0.faltam, 0);
     assert.equal(item0.completo, true);
     assert.equal(p.itemAtual?.itemId, 'te-2', 'o avanço é manual na tela, mas o alvo já apontou para frente');
-    assert.deepEqual(item0.proxima?.carga, placa(5));
+    assert.deepEqual(item0.proxima?.carga, degraus(5));
     assert.equal(item0.proxima?.indice, 4, 'série extra entra no slot seguinte');
   });
 
@@ -364,7 +374,7 @@ describe('montarPlanoDaSessao', () => {
   });
 
   it('desfazer e registrar de novo: o slot arquivado continua ocupado', () => {
-    const vivas = [0, 1].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: placa(5), repeticoes: 10 }));
+    const vivas = [0, 1].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: degraus(5), repeticoes: 10 }));
     // A série 2 foi desfeita (soft delete): não vem em `feitas`, mas o índice
     // segue ocupado no UNIQUE.
     const p = plano(vivas, new Map([[PECK.id, [0, 1, 2]]]));
@@ -380,13 +390,13 @@ describe('montarPlanoDaSessao', () => {
     assert.equal(p.seriesFeitas, 0);
     assert.equal(p.seriesFaltando, 7);
     assert.equal(p.itemAtual?.itemId, 'te-1');
-    assert.deepEqual(p.itemAtual?.proxima?.carga, placa(5));
+    assert.deepEqual(p.itemAtual?.proxima?.carga, degraus(5));
     assert.equal(p.itemAtual?.proxima?.indice, 0);
   });
 
   it('série extra não paga a série que falta em outro exercício', () => {
     const p = plano([
-      ...[0, 1, 2, 3, 4].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: placa(5), repeticoes: 10 })),
+      ...[0, 1, 2, 3, 4].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: degraus(5), repeticoes: 10 })),
       serie({ exercicioId: SUPINO.id, indice: 0, carga: kg(40000), repeticoes: 10 }),
     ]);
 
@@ -402,12 +412,12 @@ describe('montarPlanoDaSessao', () => {
       itens: [peck, supino],
       feitas: [],
       anteriores: new Map([
-        [PECK.id, [serie({ exercicioId: PECK.id, indice: 0, carga: placa(7), repeticoes: 10 })]],
+        [PECK.id, [serie({ exercicioId: PECK.id, indice: 0, carga: degraus(7), repeticoes: 10 })]],
       ]),
       indicesOcupados: new Map(),
     });
 
-    assert.deepEqual(p.itens[0].proxima?.carga, placa(7));
+    assert.deepEqual(p.itens[0].proxima?.carga, degraus(7));
     assert.equal(p.itens[0].proxima?.origemCarga, 'mesmo_indice_sessao_anterior');
     assert.deepEqual(p.itens[1].proxima?.carga, kg(40000));
     assert.equal(p.itens[1].proxima?.origemCarga, 'plano');
@@ -416,7 +426,7 @@ describe('montarPlanoDaSessao', () => {
 
 describe('fimDoDescanso', () => {
   it('é o instante de término derivado da série, nunca "agora + descanso"', () => {
-    const ultima = serie({ exercicioId: PECK.id, indice: 0, carga: placa(5), repeticoes: 10, concluidaEm: T0 });
+    const ultima = serie({ exercicioId: PECK.id, indice: 0, carga: degraus(5), repeticoes: 10, concluidaEm: T0 });
     assert.equal(fimDoDescanso(ultima, 90), T0 + 90_000);
   });
 
@@ -427,7 +437,7 @@ describe('fimDoDescanso', () => {
 
 describe('divergenciasDoPlano', () => {
   it('lista só o que divergiu, com os dois números visíveis', () => {
-    const peck = item({ exercicio: PECK, itemId: 'te-1', ordem: 0, seriesAlvo: 4, repsAlvoMin: 10, repsAlvoMax: 10, cargaAlvo: placa(5) });
+    const peck = item({ exercicio: PECK, itemId: 'te-1', ordem: 0, seriesAlvo: 4, repsAlvoMin: 10, repsAlvoMax: 10, cargaAlvo: degraus(5) });
     const supino = item({ exercicio: SUPINO, itemId: 'te-2', ordem: 1, seriesAlvo: 3, repsAlvoMin: 10, repsAlvoMax: 10, cargaAlvo: kg(40000) });
     const esteira = item({ exercicio: ESTEIRA, itemId: 'te-3', ordem: 2, seriesAlvo: 1, duracaoAlvoS: 600 });
 
@@ -436,7 +446,7 @@ describe('divergenciasDoPlano', () => {
       itens: [peck, supino, esteira],
       feitas: [
         // Bateu o 4×10 inteiro acima da ficha: diverge.
-        ...[0, 1, 2, 3].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: placa(6), repeticoes: 10 })),
+        ...[0, 1, 2, 3].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: degraus(6), repeticoes: 10 })),
         // Fez 2 das 3 séries na carga da ficha: não diverge.
         ...[0, 1].map((i) => serie({ exercicioId: SUPINO.id, indice: i, carga: kg(40000), repeticoes: 10 })),
         // Esteira não tem carga: nunca entra na lista.
@@ -451,17 +461,16 @@ describe('divergenciasDoPlano', () => {
     assert.equal(divergencias.length, 1);
     assert.equal(divergencias[0].itemId, 'te-1');
     assert.equal(divergencias[0].nome, 'Peck Dorsal');
-    assert.deepEqual(divergencias[0].noPlano, placa(5));
+    assert.deepEqual(divergencias[0].noPlano, degraus(5));
     // O degrau exato é contrato de `sugerirCarga`; aqui basta que a ficha esteja
-    // atrás do realizado e que a unidade seja a do exercício.
-    assert.equal(divergencias[0].sugerida.unidade, 'placa');
-    assert.ok(valorDaCarga(divergencias[0].sugerida) >= 6);
+    // atrás do que foi realizado.
+    assert.ok(divergencias[0].sugerida.gramas >= degraus(6).gramas);
   });
 
   it('exercício sem série nenhuma não vira botão de atualizar ficha', () => {
     const p = montarPlanoDaSessao({
       sessao: SESSAO,
-      itens: [item({ exercicio: PECK, cargaAlvo: placa(5), repsAlvoMin: 10 })],
+      itens: [item({ exercicio: PECK, cargaAlvo: degraus(5), repsAlvoMin: 10 })],
       feitas: [],
       anteriores: new Map(),
       indicesOcupados: new Map(),
@@ -475,7 +484,7 @@ describe('divergenciasDoPlano', () => {
       sessao: { ...SESSAO, treinoId: null },
       // É a forma do item avulso: sem alvo, sem carga na ficha.
       itens: [item({ exercicio: PECK, itemId: 'avulso:ex-peck', seriesAlvo: 0 })],
-      feitas: [0, 1].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: placa(4), repeticoes: 10 })),
+      feitas: [0, 1].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: degraus(4), repeticoes: 10 })),
       anteriores: new Map(),
       indicesOcupados: new Map(),
     });
@@ -489,7 +498,7 @@ describe('divergenciasDoPlano', () => {
     const p = montarPlanoDaSessao({
       sessao: SESSAO,
       itens: [item({ exercicio: PECK, itemId: 'te-1', seriesAlvo: 4, repsAlvoMin: 10 })],
-      feitas: [0, 1, 2, 3].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: placa(4), repeticoes: 10 })),
+      feitas: [0, 1, 2, 3].map((i) => serie({ exercicioId: PECK.id, indice: i, carga: degraus(4), repeticoes: 10 })),
       anteriores: new Map(),
       indicesOcupados: new Map(),
     });

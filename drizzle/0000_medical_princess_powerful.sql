@@ -5,17 +5,13 @@ CREATE TABLE `exercicios` (
 	`equipamento` text,
 	`tipo_medicao` text NOT NULL,
 	`incremento_g` integer,
-	`incremento_placas` integer,
-	`gramas_por_placa` integer,
 	`observacao` text,
 	`criado_em` integer NOT NULL,
 	`atualizado_em` integer NOT NULL,
 	`arquivado_em` integer,
-	CONSTRAINT "ck_exercicios_tipo" CHECK("exercicios"."tipo_medicao" in ('carga_kg', 'carga_placa', 'peso_corporal', 'tempo', 'distancia')),
-	CONSTRAINT "ck_exercicios_incremento" CHECK(("exercicios"."tipo_medicao" = 'carga_kg' and "exercicios"."incremento_g" > 0 and "exercicios"."incremento_placas" is null)
-       or ("exercicios"."tipo_medicao" = 'carga_placa' and "exercicios"."incremento_placas" between 1 and 5 and "exercicios"."incremento_g" is null)
-       or ("exercicios"."tipo_medicao" in ('peso_corporal', 'tempo', 'distancia') and "exercicios"."incremento_g" is null and "exercicios"."incremento_placas" is null)),
-	CONSTRAINT "ck_exercicios_placa" CHECK("exercicios"."gramas_por_placa" is null or ("exercicios"."tipo_medicao" = 'carga_placa' and "exercicios"."gramas_por_placa" > 0))
+	CONSTRAINT "ck_exercicios_tipo" CHECK("exercicios"."tipo_medicao" in ('carga_kg', 'peso_corporal', 'tempo', 'distancia')),
+	CONSTRAINT "ck_exercicios_incremento" CHECK(("exercicios"."tipo_medicao" = 'carga_kg' and "exercicios"."incremento_g" is not null and "exercicios"."incremento_g" > 0)
+       or ("exercicios"."tipo_medicao" in ('peso_corporal', 'tempo', 'distancia') and "exercicios"."incremento_g" is null))
 );
 --> statement-breakpoint
 CREATE INDEX `idx_exercicios_nome` ON `exercicios` (`nome`);--> statement-breakpoint
@@ -71,7 +67,6 @@ CREATE TABLE `series` (
 	`indice` integer NOT NULL,
 	`tipo` text DEFAULT 'valida' NOT NULL,
 	`carga_g` integer,
-	`carga_placas` integer,
 	`repeticoes` integer,
 	`duracao_s` integer,
 	`rir` integer,
@@ -81,8 +76,7 @@ CREATE TABLE `series` (
 	`arquivado_em` integer,
 	FOREIGN KEY (`sessao_id`) REFERENCES `sessoes`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`exercicio_id`) REFERENCES `exercicios`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "ck_series_uma_unidade" CHECK("series"."carga_g" is null or "series"."carga_placas" is null),
-	CONSTRAINT "ck_series_carga_positiva" CHECK(("series"."carga_g" is null or "series"."carga_g" > 0) and ("series"."carga_placas" is null or "series"."carga_placas" > 0)),
+	CONSTRAINT "ck_series_carga_positiva" CHECK("series"."carga_g" is null or "series"."carga_g" > 0),
 	CONSTRAINT "ck_series_tipo" CHECK("series"."tipo" in ('aquecimento', 'valida', 'falha')),
 	CONSTRAINT "ck_series_rir" CHECK("series"."rir" is null or ("series"."rir" between 0 and 5)),
 	CONSTRAINT "ck_series_reps" CHECK("series"."repeticoes" is null or "series"."repeticoes" > 0),
@@ -117,7 +111,6 @@ CREATE TABLE `treino_exercicios` (
 	`reps_alvo_min` integer,
 	`reps_alvo_max` integer,
 	`carga_alvo_g` integer,
-	`carga_alvo_placas` integer,
 	`duracao_alvo_s` integer,
 	`descanso_s` integer DEFAULT 90 NOT NULL,
 	`observacao` text,
@@ -126,8 +119,7 @@ CREATE TABLE `treino_exercicios` (
 	`arquivado_em` integer,
 	FOREIGN KEY (`treino_id`) REFERENCES `treinos`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`exercicio_id`) REFERENCES `exercicios`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "ck_te_uma_unidade" CHECK("treino_exercicios"."carga_alvo_g" is null or "treino_exercicios"."carga_alvo_placas" is null),
-	CONSTRAINT "ck_te_carga_positiva" CHECK(("treino_exercicios"."carga_alvo_g" is null or "treino_exercicios"."carga_alvo_g" > 0) and ("treino_exercicios"."carga_alvo_placas" is null or "treino_exercicios"."carga_alvo_placas" > 0)),
+	CONSTRAINT "ck_te_carga_positiva" CHECK("treino_exercicios"."carga_alvo_g" is null or "treino_exercicios"."carga_alvo_g" > 0),
 	CONSTRAINT "ck_te_series_alvo" CHECK("treino_exercicios"."series_alvo" > 0),
 	CONSTRAINT "ck_te_reps_faixa" CHECK("treino_exercicios"."reps_alvo_min" is null or "treino_exercicios"."reps_alvo_max" is null or "treino_exercicios"."reps_alvo_max" >= "treino_exercicios"."reps_alvo_min"),
 	CONSTRAINT "ck_te_duracao" CHECK("treino_exercicios"."duracao_alvo_s" is null or "treino_exercicios"."duracao_alvo_s" > 0)

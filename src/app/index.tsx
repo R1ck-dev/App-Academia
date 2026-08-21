@@ -23,6 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TelaDeBackup } from '@/components/backup-tela';
 import { TelaDaFicha } from '@/components/ficha-tela';
+import { Folha } from '@/components/folha';
 import { useConsulta } from '@/components/progresso-consulta';
 import { ResumoDaSessao } from '@/components/treino-resumo';
 import { TelaSessao } from '@/components/treino-sessao';
@@ -30,7 +31,8 @@ import { useSeriesDaSessao, useSessaoEmAndamento } from '@/components/treino-dad
 import { letraDoTreino } from '@/components/treino-texto';
 import { useVoltarDoAparelho } from '@/components/voltar-do-aparelho';
 import { alvo, cor, espaco, margem, raio, tipo } from '@/constants/tema';
-import { descartarSessaoVazia, finalizarSessao, iniciarSessao } from '@/db/mutations';
+import { TextInput } from 'react-native';
+import { criarTreino, descartarSessaoVazia, finalizarSessao, iniciarSessao } from '@/db/mutations';
 import { ultimoBackupEm } from '@/db/exportar';
 import { resumoDosTreinos, type ResumoDeTreino } from '@/db/queries';
 import type { Sessao } from '@/db/schema';
@@ -150,6 +152,7 @@ function Abertura({
   const fichas = useConsulta('Abertura', resumoDosTreinos);
   const ultimoBackup = useConsulta('Abertura:backup', ultimoBackupEm);
   const agora = Date.now();
+  const [criandoTreino, setCriandoTreino] = useState(false);
 
   function iniciar(ficha: ResumoDeTreino) {
     // O nome é COPIADO para a sessão pela mutation: renomear a ficha depois não
@@ -171,6 +174,9 @@ function Abertura({
         {fichas.length === 0 ? (
           <View style={estilos.vazio}>
             <Text style={estilos.vazioTexto}>Nenhum treino montado ainda.</Text>
+            <Text style={estilos.vazioNota}>
+              Um treino é a sua ficha: um nome e os exercícios dele, na ordem em que você faz.
+            </Text>
           </View>
         ) : (
           <View style={estilos.lista}>
@@ -186,6 +192,15 @@ function Abertura({
           </View>
         )}
 
+        {/* O caminho de saída do app vazio. Fica DEPOIS dos cartões porque
+            começar a treinar é o motivo da tela existir; montar ficha é raro. */}
+        <Pressable
+          style={({ pressed }) => [estilos.novoTreino, pressed && estilos.novoTreinoTocado]}
+          onPress={() => setCriandoTreino(true)}
+        >
+          <Text style={estilos.novoTreinoTexto}>+ Novo treino</Text>
+        </Pressable>
+
         {aberta === undefined ? null : (
           <SessaoAberta
             sessao={aberta}
@@ -199,6 +214,19 @@ function Abertura({
       {/* O lembrete de backup mora AQUI, antes de começar, em uma linha —
           nunca no resumo do treino e nunca em vermelho. Alarme toda abertura
           ensina a ignorar alarme. */}
+      {criandoTreino ? (
+        <FolhaDeTreinoNovo
+          proximaOrdem={fichas.length}
+          aoCriar={(ficha) => {
+            setCriandoTreino(false);
+            // Já abre a ficha: um treino sem exercício não serve para nada, e
+            // fazer ele procurar onde acrescentar seria um passo perdido.
+            aoEditarFicha(ficha);
+          }}
+          aoFechar={() => setCriandoTreino(false)}
+        />
+      ) : null}
+
       <View style={estilos.rodape}>
         {fichas.length === 0 ? (
           <View />
@@ -213,6 +241,94 @@ function Abertura({
         </Pressable>
       </View>
     </SafeAreaView>
+  );
+}
+
+/**
+ * Nome e descrição, e nada mais: os exercícios entram na ficha, que abre em
+ * seguida. Pedir tudo numa folha só faria o formulário competir com a tela que
+ * já existe para isso.
+ */
+function FolhaDeTreinoNovo({
+  proximaOrdem,
+  aoCriar,
+  aoFechar,
+}: {
+  proximaOrdem: number;
+  aoCriar: (ficha: ResumoDeTreino) => void;
+  aoFechar: () => void;
+}) {
+  const [nome, setNome] = useState('');
+  const [descricao, setDescricao] = useState('');
+  const [erro, setErro] = useState<string | null>(null);
+
+  function criar() {
+    if (nome.trim() === '') {
+      setErro('O treino precisa de um nome.');
+      return;
+    }
+    const limpa = descricao.trim();
+    const id = criarTreino({
+      nome: nome.trim(),
+      descricao: limpa === '' ? undefined : limpa,
+      ordem: proximaOrdem,
+    });
+    aoCriar({
+      id,
+      nome: nome.trim(),
+      descricao: limpa === '' ? null : limpa,
+      exercicios: 0,
+      ultimaSessaoEm: null,
+    });
+  }
+
+  return (
+    <Folha aoFechar={aoFechar}>
+      <View style={estilos.linhaDaFolha}>
+        <Text style={estilos.tituloDaFolha}>Treino novo</Text>
+        <Pressable onPress={aoFechar} hitSlop={12}>
+          <Text style={estilos.fecharFolha}>fechar</Text>
+        </Pressable>
+      </View>
+      <Text style={estilos.notaDaFolha}>
+        O nome é o que aparece no cartão e fica gravado em cada sessão deste treino.
+      </Text>
+
+      <View style={estilos.campoDaFolha}>
+        <Text style={estilos.campoRotulo}>Nome</Text>
+        <TextInput
+          style={estilos.campoEntrada}
+          value={nome}
+          onChangeText={(t) => {
+            setNome(t);
+            setErro(null);
+          }}
+          placeholder="Treino A"
+          placeholderTextColor={cor.textoDesligado}
+          autoFocus
+        />
+      </View>
+
+      <View style={estilos.campoDaFolha}>
+        <Text style={estilos.campoRotulo}>Descrição</Text>
+        <TextInput
+          style={estilos.campoEntrada}
+          value={descricao}
+          onChangeText={setDescricao}
+          placeholder="Costas, bíceps e ombros"
+          placeholderTextColor={cor.textoDesligado}
+        />
+      </View>
+
+      {erro === null ? null : <Text style={estilos.erroDaFolha}>{erro}</Text>}
+
+      <Pressable
+        style={({ pressed }) => [estilos.salvarDaFolha, pressed && estilos.novoTreinoTocado]}
+        onPress={criar}
+      >
+        <Text style={estilos.salvarDaFolhaTexto}>Criar e montar a ficha</Text>
+      </Pressable>
+    </Folha>
   );
 }
 
@@ -408,4 +524,59 @@ const estilos = StyleSheet.create({
 
   vazio: { paddingHorizontal: margem.conteudo, paddingTop: espaco.seis },
   vazioTexto: { ...tipo.corpo, color: cor.textoSecundario },
+  vazioNota: { ...tipo.corpoMenor, color: cor.textoTerciario, marginTop: espaco.dois },
+
+  // Tracejado, e não preenchido: acrescentar ficha é caminho secundário e não
+  // pode disputar o olho com o cartão do treino de hoje.
+  novoTreino: {
+    marginTop: espaco.quatro,
+    marginHorizontal: margem.listaDeCartoes,
+    minHeight: alvo.botaoSecundario,
+    borderRadius: raio.container,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: cor.borda,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  novoTreinoTocado: { backgroundColor: cor.acaoPressionada },
+  novoTreinoTexto: { ...tipo.rotuloForte, color: cor.textoSecundario },
+
+  linhaDaFolha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: espaco.dois,
+  },
+  tituloDaFolha: {
+    flex: 1,
+    fontFamily: tipo.nomeDoExercicio.fontFamily,
+    fontSize: 22,
+    lineHeight: 25,
+    color: cor.texto,
+  },
+  fecharFolha: { ...tipo.rotuloCompacto, fontSize: 13, color: cor.acaoTexto },
+  notaDaFolha: { ...tipo.corpoMenor, color: cor.textoSecundario },
+  campoDaFolha: { gap: espaco.um, marginTop: espaco.dois },
+  campoRotulo: { ...tipo.meta, color: cor.textoTerciario },
+  campoEntrada: {
+    height: 54,
+    paddingHorizontal: espaco.quatro,
+    borderRadius: raio.container,
+    borderWidth: 2,
+    borderColor: cor.borda,
+    backgroundColor: cor.fundo,
+    ...tipo.corpo,
+    color: cor.texto,
+  },
+  erroDaFolha: { ...tipo.corpoMenor, color: cor.acaoTexto },
+  salvarDaFolha: {
+    height: 56,
+    marginTop: espaco.quatro,
+    borderRadius: raio.pilula,
+    backgroundColor: cor.acao,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  salvarDaFolhaTexto: { ...tipo.rotuloPrimario, fontSize: 19, color: cor.sobreAcao },
 });

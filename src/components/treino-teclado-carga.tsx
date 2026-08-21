@@ -2,35 +2,38 @@
  * O caminho raro: digitar a carga em vez de andar de um incremento por toque.
  *
  * Serve dois casos — a estreia sem referência nenhuma (`sem_referencia`, quando
- * o botão vira "Informar carga") e o salto grande, em que somar de 1 em 1 placa
+ * o botão vira "Informar carga") e o salto grande, em que somar de 2,5 em 2,5 kg
  * custaria mais toques que digitar. Não valida nada por conta própria:
- * `parseCarga` já sabe recusar "5,5" numa máquina de placa com a frase certa.
+ * `parseCarga` já sabe recusar o que não é número, com a frase certa.
+ *
+ * Fica centralizada, e não ancorada no rodapé como as outras folhas, mas sofre
+ * do MESMO problema de teclado — daí usar `useAlturaDoTeclado` de `folha.tsx`.
  */
 
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { useAlturaDoTeclado } from '@/components/folha';
 import { alvo, cor, espaco, margem, raio, tipo } from '@/constants/tema';
-import { formatarNumeroDaCarga, parseCarga, type Carga, type Unidade } from '@/dominio/carga';
+import { formatarNumeroDaCarga, parseCarga, type Carga } from '@/dominio/carga';
 
 export function TecladoDeCarga({
   visivel,
-  unidade,
   inicial,
   aoConfirmar,
   aoCancelar,
 }: {
   visivel: boolean;
-  unidade: Unidade;
   inicial: Carga | null;
   aoConfirmar: (carga: Carga) => void;
   aoCancelar: () => void;
 }) {
   const [texto, setTexto] = useState(() => (inicial === null ? '' : formatarNumeroDaCarga(inicial)));
   const [erro, setErro] = useState<string | null>(null);
+  const alturaDoTeclado = useAlturaDoTeclado();
 
   function confirmar() {
-    const r = parseCarga(texto, unidade);
+    const r = parseCarga(texto);
     if (!r.ok) {
       setErro(r.erro);
       return;
@@ -41,11 +44,14 @@ export function TecladoDeCarga({
 
   return (
     <Modal visible={visivel} transparent animationType="fade" onRequestClose={aoCancelar}>
-      <View style={estilos.fundo}>
-        <View style={estilos.caixa}>
-          <Text style={estilos.titulo}>
-            Carga em {unidade === 'kg' ? 'quilos' : 'placas'}
-          </Text>
+      <Pressable
+        style={[estilos.fundo, { paddingBottom: margem.conteudo + alturaDoTeclado }]}
+        // Com o teclado aberto o toque fora fecha só o teclado: cancelar aqui
+        // jogaria fora a carga digitada por causa de um toque de dispensar.
+        onPress={() => (alturaDoTeclado > 0 ? Keyboard.dismiss() : aoCancelar())}
+      >
+        <Pressable style={estilos.caixa} onPress={() => {}}>
+          <Text style={estilos.titulo}>Carga em quilos</Text>
           <TextInput
             style={estilos.entrada}
             value={texto}
@@ -53,13 +59,10 @@ export function TecladoDeCarga({
               setTexto(t);
               setErro(null);
             }}
-            // `decimal-pad` mesmo em placa: o teclado numérico do Android não tem
-            // como recusar a vírgula, e quem recusa com a frase que explica é o
-            // `parseCarga`.
             keyboardType="decimal-pad"
             autoFocus
             selectTextOnFocus
-            placeholder={unidade === 'kg' ? '42,5' : '5'}
+            placeholder="42,5"
             placeholderTextColor={cor.textoDesligado}
             onSubmitEditing={confirmar}
           />
@@ -72,8 +75,8 @@ export function TecladoDeCarga({
               <Text style={[estilos.botaoTexto, estilos.botaoTextoPrimario]}>Usar</Text>
             </Pressable>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

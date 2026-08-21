@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, it } from 'node:test';
 
-import { kg, placa } from '../dominio/carga.ts';
+import { kg } from '../dominio/carga.ts';
 import { criarBancoDeTeste } from './banco-de-teste.ts';
 import {
   arquivarExercicio,
@@ -95,7 +95,7 @@ describe('toda escrita avisa a tela', () => {
   });
 
   it('registrar e desfazer série avisam', () => {
-    const ex = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
+    const ex = criarExercicio({ nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
     const r = iniciarSessao({ nome: 'Treino A' });
     assert.ok(r.ok);
 
@@ -106,7 +106,7 @@ describe('toda escrita avisa a tela', () => {
           sessaoId: r.sessaoId,
           exercicioId: ex,
           indice: 0,
-          carga: placa(5),
+          carga: kg(25000),
           repeticoes: 10,
         });
       }) > 0
@@ -123,18 +123,19 @@ describe('toda escrita avisa a tela', () => {
   });
 
   it('transação que falha NÃO avisa — a tela não pode reler o que sofreu rollback', () => {
-    const supino = criarExercicio({ nome: 'Supino Inclinado', tipoMedicao: 'carga_kg' });
+    const abdominal = criarExercicio({ nome: 'Abdominal Supra Solo', tipoMedicao: 'peso_corporal' });
     const r = iniciarSessao({ nome: 'Treino C' });
     assert.ok(r.ok);
 
     const avisos = avisosDe(() => {
       assert.throws(() =>
-        // Placa em exercício de kg: `registrarSerie` recusa dentro da transação.
+        // Carga em exercício de peso corporal: `registrarSerie` recusa DENTRO da
+        // transação, e o proxy de `conexao.ts` só avisa depois do commit.
         registrarSerie({
           sessaoId: r.sessaoId,
-          exercicioId: supino,
+          exercicioId: abdominal,
           indice: 0,
-          carga: placa(5),
+          carga: kg(25000),
           repeticoes: 10,
         })
       );

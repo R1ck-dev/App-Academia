@@ -8,10 +8,11 @@
  * ## A trava que o banco não pode dar
  *
  * `CHECK` do SQLite não aceita subquery, então **nada** no banco liga
- * `series.carga_placas` ao `tipo_medicao` do exercício, e nada nos tipos pode
+ * `series.carga_g` ao `tipo_medicao` do exercício, e nada nos tipos pode
  * ligar, porque `exercicioId` é uma `string`. Sem `cargaCompativel` aqui dentro,
- * `registrarSerie({ exercicioId: peckDorsal, carga: kg(40000) })` gravaria quilo
- * num exercício de placa e o histórico passaria a ter duas unidades.
+ * `registrarSerie({ exercicioId: abdominal, carga: kg(40000) })` gravaria quilo
+ * num exercício de peso corporal, e o volume passaria a somar o que ninguém
+ * levantou.
  *
  * Isto é garantia de APLICAÇÃO, declarada como tal, e é por isso que ela tem
  * teste próprio em `mutations.test.ts`.
@@ -30,7 +31,7 @@ import type { SerieSugerida } from '../dominio/execucao.ts';
 import {
   cargaCompativel,
   incrementoPadrao,
-  unidadeDoTipo,
+  temCarga,
   type Exercicio as ExercicioDoDominio,
 } from '../dominio/exercicio.ts';
 import { agora, db, novoId, type Banco } from './conexao.ts';
@@ -61,10 +62,6 @@ const ID_PERFIL = 'unico';
 // validação fora do BEGIN e é justamente o que a trava não pode aceitar.
 
 /**
- * Não filtra `arquivado_em`: corrigir uma série de exercício arquivado continua
- * precisando saber a unidade dele.
- */
-/**
  * O maior índice já usado + 1, dentro da transação que vai gravar.
  *
  * NÃO filtra `arquivado_em`: o UNIQUE também não filtra, então uma série
@@ -88,8 +85,7 @@ function lerExercicio(tx: Escrita, exercicioId: string): ExercicioDoDominio {
     nome: linha.nome,
     grupoMuscular: linha.grupoMuscular,
     tipoMedicao: linha.tipoMedicao,
-    incremento: cargaDaLinha({ cargaG: linha.incrementoG, cargaPlacas: linha.incrementoPlacas }),
-    gramasPorPlaca: linha.gramasPorPlaca,
+    incremento: cargaDaLinha({ cargaG: linha.incrementoG }),
     arquivadoEm: linha.arquivadoEm,
   };
 }
@@ -111,9 +107,7 @@ function exigirCargaCompativel(ex: ExercicioDoDominio, carga: Carga | null): voi
  * estreia cai no teclado). Carga de SÉRIE não: por isso são duas conferências.
  */
 function exigirCargaAlvoCompativel(ex: ExercicioDoDominio, carga: Carga | null): void {
-  if (carga === null) return;
-  const u = unidadeDoTipo(ex.tipoMedicao);
-  if (u !== null && carga.unidade === u) return;
+  if (carga === null || temCarga(ex.tipoMedicao)) return;
   throw new Error(
     `Carga-alvo incompatível com "${ex.nome}" (${ex.tipoMedicao}): recebi ${descrever(carga)}.`
   );
@@ -121,26 +115,21 @@ function exigirCargaAlvoCompativel(ex: ExercicioDoDominio, carga: Carga | null):
 
 /**
  * O `ck_exercicios_incremento` já barra o par incoerente, mas com uma mensagem
- * de SQLite. Conferir aqui é o que devolve o nome do exercício e a unidade.
+ * de SQLite. Conferir aqui é o que devolve o nome do exercício.
  */
 function exigirIncrementoCompativel(tipo: TipoMedicao, incremento: Carga | null): void {
-  const u = unidadeDoTipo(tipo);
-  if (u === null) {
-    if (incremento === null) return;
-    throw new Error(`Exercício de ${tipo} não tem incremento: recebi ${descrever(incremento)}.`);
-  }
-  if (incremento !== null && incremento.unidade === u) return;
-  throw new Error(`Incremento de ${tipo} tem que ser em ${u}: recebi ${descrever(incremento)}.`);
+  if (temCarga(tipo) === (incremento !== null)) return;
+  if (incremento === null) throw new Error(`Exercício de ${tipo} precisa de incremento.`);
+  throw new Error(`Exercício de ${tipo} não tem incremento: recebi ${descrever(incremento)}.`);
 }
 
 // ── CATÁLOGO ───────────────────────────────────────────────────────────────
 
 export function criarExercicio(dados: {
   nome: string;
-  /** Obrigatório: escolher a unidade não é opcional, e é o exercício quem decide. */
+  /** Obrigatório: se o exercício tem carga é decisão dele, não default. */
   tipoMedicao: TipoMedicao;
   incremento?: Carga | null;
-  gramasPorPlaca?: number | null;
   grupoMuscular?: string;
   equipamento?: string;
   observacao?: string;
@@ -149,12 +138,6 @@ export function criarExercicio(dados: {
     dados.incremento === undefined ? incrementoPadrao(dados.tipoMedicao) : dados.incremento;
   exigirIncrementoCompativel(dados.tipoMedicao, incremento);
 
-  const gramasPorPlaca = dados.gramasPorPlaca ?? null;
-  if (gramasPorPlaca !== null && dados.tipoMedicao !== 'carga_placa') {
-    throw new Error(`Só exercício de placa tem gramas por placa; ${dados.nome} é ${dados.tipoMedicao}.`);
-  }
-
-  const colunas = colunasDaCarga(incremento);
   const id = novoId();
   const instante = agora();
   db.insert(exercicios)
@@ -165,9 +148,7 @@ export function criarExercicio(dados: {
       equipamento: dados.equipamento,
       observacao: dados.observacao,
       tipoMedicao: dados.tipoMedicao,
-      incrementoG: colunas.cargaG,
-      incrementoPlacas: colunas.cargaPlacas,
-      gramasPorPlaca,
+      incrementoG: colunasDaCarga(incremento).cargaG,
       criadoEm: instante,
       atualizadoEm: instante,
     })
@@ -204,7 +185,6 @@ export function editarExercicio(
       exigirIncrementoCompativel(ex.tipoMedicao, incremento);
       const colunas = colunasDaCarga(incremento);
       campos.incrementoG = colunas.cargaG;
-      campos.incrementoPlacas = colunas.cargaPlacas;
     }
     tx.update(exercicios).set(campos).where(eq(exercicios.id, exercicioId)).run();
   });
@@ -224,37 +204,14 @@ export function arquivarExercicio(exercicioId: string): void {
 }
 
 /**
- * O dia da descoberta ("a placa pesa 5 kg"): UPDATE de UMA linha, e nenhuma
- * linha de `series` é tocada. A conversão acontece na leitura, então o histórico
- * inteiro ganha equivalente em kg retroativamente — e `null` volta a "não sei"
- * sem falsificar nada.
- */
-export function calibrarPlaca(
-  exercicioId: string,
-  gramasPorPlaca: number | null
-): { ok: true } | { ok: false; motivo: 'nao_e_placa' } {
-  if (gramasPorPlaca !== null && gramasPorPlaca <= 0) {
-    throw new Error('Gramas por placa tem que ser maior que zero, ou null para descalibrar.');
-  }
-  const instante = agora();
-  return db.transaction((tx) => {
-    const ex = lerExercicio(tx, exercicioId);
-    if (ex.tipoMedicao !== 'carga_placa') return { ok: false as const, motivo: 'nao_e_placa' as const };
-    tx.update(exercicios)
-      .set({ gramasPorPlaca, atualizadoEm: instante })
-      .where(eq(exercicios.id, exercicioId))
-      .run();
-    return { ok: true as const };
-  });
-}
-
-/**
- * Recusa se já existir QUALQUER série, inclusive arquivada: a unidade do
- * histórico não muda sob os pés de quem já gravou.
+ * Recusa se já existir QUALQUER série, inclusive arquivada: a natureza do
+ * histórico não muda sob os pés de quem já gravou. Trocar "peso corporal" por
+ * "kg" depois de dez sessões deixaria dez séries sem a carga que o novo tipo
+ * exige.
  *
  * Ajusta o incremento junto (o `ck_exercicios_incremento` exige o par coerente)
- * e LIMPA a carga-alvo das fichas que ficariam na unidade errada — deixá-la ali
- * faria o prefill devolver uma carga que `registrarSerie` recusa na academia.
+ * e LIMPA a carga-alvo das fichas quando o tipo novo não tem carga — deixá-la
+ * ali faria o prefill devolver uma carga que `registrarSerie` recusa.
  */
 export function alterarTipoMedicao(
   exercicioId: string,
@@ -272,111 +229,26 @@ export function alterarTipoMedicao(
       return { ok: false as const, motivo: 'tem_series' as const, series: total.quantas };
     }
 
-    const u = unidadeDoTipo(tipo);
-    // Mantém o incremento quando a unidade sobrevive à troca; senão, o padrão.
-    const incremento =
-      ex.incremento !== null && u !== null && ex.incremento.unidade === u
-        ? ex.incremento
-        : incrementoPadrao(tipo);
-    const colunas = colunasDaCarga(incremento);
+    // Mantém o incremento quando o tipo novo também tem carga; senão, o padrão.
+    const incremento = temCarga(tipo) && ex.incremento !== null ? ex.incremento : incrementoPadrao(tipo);
 
     tx.update(exercicios)
       .set({
         tipoMedicao: tipo,
-        incrementoG: colunas.cargaG,
-        incrementoPlacas: colunas.cargaPlacas,
-        gramasPorPlaca: tipo === 'carga_placa' ? ex.gramasPorPlaca : null,
+        incrementoG: colunasDaCarga(incremento).cargaG,
         atualizadoEm: instante,
       })
       .where(eq(exercicios.id, exercicioId))
       .run();
 
-    tx.update(treinoExercicios)
-      .set({
-        cargaAlvoG: u === 'kg' ? treinoExercicios.cargaAlvoG : null,
-        cargaAlvoPlacas: u === 'placa' ? treinoExercicios.cargaAlvoPlacas : null,
-        atualizadoEm: instante,
-      })
-      .where(eq(treinoExercicios.exercicioId, exercicioId))
-      .run();
-
-    return { ok: true as const };
-  });
-}
-
-/**
- * O outro 10% da pergunta de seis meses: "quero DIGITAR em kg de agora em
- * diante". É LOSSY e irreversível — reescreve `series` e `carga_alvo` —, exige
- * calibração e só existe no sentido placa → kg, porque kg → placa não acontece
- * na vida real e seria caminho sem uso.
- *
- * Quem só quer VER em kg usa `calibrarPlaca`, que não toca em série nenhuma.
- */
-export function converterExercicioParaKg(
-  exercicioId: string
-):
-  | { ok: true; seriesConvertidas: number }
-  | { ok: false; motivo: 'sem_calibracao' | 'nao_e_placa' } {
-  const instante = agora();
-  return db.transaction((tx) => {
-    const ex = lerExercicio(tx, exercicioId);
-    if (ex.tipoMedicao !== 'carga_placa') return { ok: false as const, motivo: 'nao_e_placa' as const };
-    const gramasPorPlaca = ex.gramasPorPlaca;
-    if (gramasPorPlaca === null || gramasPorPlaca <= 0) {
-      return { ok: false as const, motivo: 'sem_calibracao' as const };
+    if (!temCarga(tipo)) {
+      tx.update(treinoExercicios)
+        .set({ cargaAlvoG: null, atualizadoEm: instante })
+        .where(eq(treinoExercicios.exercicioId, exercicioId))
+        .run();
     }
 
-    // Conta ANTES de converter: depois do UPDATE não há mais o que contar.
-    // Inclui as arquivadas, que também guardam placa e também precisam migrar.
-    const [total] = tx
-      .select({ quantas: count() })
-      .from(series)
-      .where(and(eq(series.exercicioId, exercicioId), isNotNull(series.cargaPlacas)))
-      .all();
-
-    tx.update(series)
-      .set({
-        cargaG: sql`${series.cargaPlacas} * ${gramasPorPlaca}`,
-        cargaPlacas: null,
-        atualizadoEm: instante,
-      })
-      .where(and(eq(series.exercicioId, exercicioId), isNotNull(series.cargaPlacas)))
-      .run();
-
-    tx.update(treinoExercicios)
-      .set({
-        cargaAlvoG: sql`${treinoExercicios.cargaAlvoPlacas} * ${gramasPorPlaca}`,
-        cargaAlvoPlacas: null,
-        atualizadoEm: instante,
-      })
-      .where(
-        and(
-          eq(treinoExercicios.exercicioId, exercicioId),
-          isNotNull(treinoExercicios.cargaAlvoPlacas)
-        )
-      )
-      .run();
-
-    const incremento = ex.incremento;
-    const incrementoG =
-      incremento !== null && incremento.unidade === 'placa'
-        ? incremento.placas * gramasPorPlaca
-        : INCREMENTO_PADRAO.kg;
-
-    tx.update(exercicios)
-      .set({
-        tipoMedicao: 'carga_kg',
-        incrementoG,
-        incrementoPlacas: null,
-        // `ck_exercicios_placa` só admite gramas por placa em `carga_placa`, e
-        // não há mais placa nenhuma para converter.
-        gramasPorPlaca: null,
-        atualizadoEm: instante,
-      })
-      .where(eq(exercicios.id, exercicioId))
-      .run();
-
-    return { ok: true as const, seriesConvertidas: total?.quantas ?? 0 };
+    return { ok: true as const };
   });
 }
 
@@ -390,6 +262,23 @@ export function criarTreino(dados: { nome: string; descricao?: string; ordem?: n
     .run();
   anunciarEscrita();
   return id;
+}
+
+/**
+ * Renomear a ficha NÃO reescreve o histórico: `sessoes.nome` é uma cópia feita
+ * na abertura da sessão, justamente para que "Treino A" virar "Segunda — Pernas"
+ * hoje não mude o que aconteceu em março.
+ */
+export function editarTreino(
+  treinoId: string,
+  dados: Partial<{ nome: string; descricao: string | null; ordem: number }>
+): void {
+  const campos: Partial<typeof treinos.$inferInsert> = { atualizadoEm: agora() };
+  if (dados.nome !== undefined) campos.nome = dados.nome;
+  if ('descricao' in dados) campos.descricao = dados.descricao;
+  if (dados.ordem !== undefined) campos.ordem = dados.ordem;
+  db.update(treinos).set(campos).where(eq(treinos.id, treinoId)).run();
+  anunciarEscrita();
 }
 
 export function arquivarTreino(treinoId: string): void {
@@ -436,7 +325,6 @@ export function definirItemDoTreino(dados: {
         repsAlvoMin: dados.repsAlvoMin ?? null,
         repsAlvoMax: dados.repsAlvoMax ?? null,
         cargaAlvoG: colunas.cargaG,
-        cargaAlvoPlacas: colunas.cargaPlacas,
         duracaoAlvoS: dados.duracaoAlvoS ?? null,
         descansoS: dados.descansoS,
         observacao: dados.observacao,
@@ -491,7 +379,7 @@ export function definirCargaAlvo(itemId: string, carga: Carga | null): void {
     exigirCargaAlvoCompativel(lerExercicio(tx, item.exercicioId), carga);
     const colunas = colunasDaCarga(carga);
     tx.update(treinoExercicios)
-      .set({ cargaAlvoG: colunas.cargaG, cargaAlvoPlacas: colunas.cargaPlacas, atualizadoEm: instante })
+      .set({ cargaAlvoG: colunas.cargaG, atualizadoEm: instante })
       .where(eq(treinoExercicios.id, itemId))
       .run();
   });
@@ -662,7 +550,6 @@ export function registrarSerie(dados: {
         indice,
         tipo: dados.tipo,
         cargaG: colunas.cargaG,
-        cargaPlacas: colunas.cargaPlacas,
         repeticoes: dados.repeticoes ?? null,
         duracaoS: dados.duracaoS ?? null,
         rir: dados.rir ?? null,
@@ -735,7 +622,6 @@ export function corrigirSerie(
       exigirCargaCompativel(lerExercicio(tx, linha.exercicioId), carga);
       const colunas = colunasDaCarga(carga);
       campos.cargaG = colunas.cargaG;
-      campos.cargaPlacas = colunas.cargaPlacas;
     }
     if (dados.repeticoes !== undefined) campos.repeticoes = dados.repeticoes;
     if (dados.duracaoS !== undefined) campos.duracaoS = dados.duracaoS;

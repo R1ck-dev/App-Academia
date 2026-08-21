@@ -37,8 +37,19 @@ import {
   treinos,
 } from './schema.ts';
 
-/** Sobe quando o formato mudar de um jeito que a versão anterior não leia. */
-export const VERSAO_DO_BACKUP = 1;
+/**
+ * Sobe quando o formato mudar de um jeito que a versão anterior não leia.
+ *
+ * A 2 removeu a unidade "placa": sumiram as colunas `carga_placas`,
+ * `carga_alvo_placas`, `incremento_placas` e `gramas_por_placa`. Backup v1 é
+ * RECUSADO, e não convertido — converter exigiria saber quanto pesa cada placa,
+ * e nenhum exercício jamais foi calibrado. Fingir uma conversão inventaria um
+ * histórico de cargas que nunca existiu, que é pior do que dizer não.
+ */
+export const VERSAO_DO_BACKUP = 2;
+
+/** Abaixo disto o arquivo é de um schema que este app não sabe mais ler. */
+const VERSAO_MINIMA_LEGIVEL = 2;
 
 /**
  * A ORDEM importa e é a de dependência: `exercicios` antes de
@@ -111,6 +122,12 @@ export function interpretar(texto: string): Leitura {
     return {
       ok: false,
       erro: `Backup da versão ${objeto.versao}; este app lê até a ${VERSAO_DO_BACKUP}. Atualize o app antes de restaurar.`,
+    };
+  }
+  if (objeto.versao < VERSAO_MINIMA_LEGIVEL) {
+    return {
+      ok: false,
+      erro: `Backup da versão ${objeto.versao}, de quando existia carga em placa. Este app só usa quilo e não tem como converter — a conversão dependeria de saber o peso de cada placa.`,
     };
   }
 

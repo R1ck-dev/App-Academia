@@ -9,12 +9,17 @@
  *
  * Folha e não tela: registrar a pesagem da manhã é o gesto frequente aqui, e
  * navegar para uma tela e voltar por causa de um número seria atrito puro.
+ *
+ * O `Modal` daqui foi para `folha.tsx`: era o mesmo de outros dois arquivos, e
+ * nenhum dos três saía da frente do teclado — o que fazia esta tela em
+ * particular parecer que não salvava o peso.
  */
 
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { cor, espaco, margem, raio, sombraDaFolha, tipo } from '@/constants/tema';
+import { Folha } from '@/components/folha';
+import { cor, espaco, margem, raio, tipo } from '@/constants/tema';
 import {
   definirObjetivoPeso,
   registrarMedida,
@@ -62,44 +67,39 @@ function FolhaDeCampo({
   }
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={aoFechar}>
-      <View style={estilos.fundo}>
-        <Pressable style={estilos.area} onPress={aoFechar} />
-        <View style={estilos.folha}>
-          <Text style={estilos.titulo}>{titulo}</Text>
-          {nota ? <Text style={estilos.nota}>{nota}</Text> : null}
+    <Folha aoFechar={aoFechar}>
+      <Text style={estilos.titulo}>{titulo}</Text>
+      {nota ? <Text style={estilos.nota}>{nota}</Text> : null}
 
-          {children}
+      {children}
 
-          <View style={estilos.campoCaixa}>
-            <TextInput
-              style={estilos.campo}
-              value={texto}
-              onChangeText={(t) => {
-                setTexto(t);
-                setErro(null);
-              }}
-              onSubmitEditing={salvar}
-              placeholder={placeholder}
-              placeholderTextColor={cor.textoDesligado}
-              keyboardType="decimal-pad"
-              returnKeyType="done"
-              autoFocus
-              selectTextOnFocus
-            />
-            <Text style={estilos.sufixo}>{sufixo}</Text>
-          </View>
-          {erro === null ? null : <Text style={estilos.erro}>{erro}</Text>}
-
-          <Pressable
-            style={({ pressed }) => [estilos.salvar, pressed && estilos.salvarTocado]}
-            onPress={salvar}
-          >
-            <Text style={estilos.salvarTexto}>Salvar</Text>
-          </Pressable>
-        </View>
+      <View style={estilos.campoCaixa}>
+        <TextInput
+          style={estilos.campo}
+          value={texto}
+          onChangeText={(t) => {
+            setTexto(t);
+            setErro(null);
+          }}
+          onSubmitEditing={salvar}
+          placeholder={placeholder}
+          placeholderTextColor={cor.textoDesligado}
+          keyboardType="decimal-pad"
+          returnKeyType="done"
+          autoFocus
+          selectTextOnFocus
+        />
+        <Text style={estilos.sufixo}>{sufixo}</Text>
       </View>
-    </Modal>
+      {erro === null ? null : <Text style={estilos.erro}>{erro}</Text>}
+
+      <Pressable
+        style={({ pressed }) => [estilos.salvar, pressed && estilos.salvarTocado]}
+        onPress={salvar}
+      >
+        <Text style={estilos.salvarTexto}>Salvar</Text>
+      </Pressable>
+    </Folha>
   );
 }
 
@@ -180,6 +180,10 @@ export function FolhaDeMedida({ aoFechar }: { aoFechar: () => void }) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        // `flexGrow: 0` porque `ScrollView` horizontal nasce com `flexGrow: 1`:
+        // dentro de um pai que distribua altura livre, cada pílula esticaria
+        // até o topo. Foi exatamente o que deformou os chips do Histórico.
+        style={estilos.filaDePartes}
         contentContainerStyle={estilos.partes}
       >
         {PARTES_CORPO.map((p) => {
@@ -202,18 +206,6 @@ export function FolhaDeMedida({ aoFechar }: { aoFechar: () => void }) {
 }
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1, backgroundColor: 'rgba(46,43,37,0.5)', justifyContent: 'flex-end' },
-  area: { flex: 1 },
-  folha: {
-    backgroundColor: cor.superficieElevada,
-    borderTopLeftRadius: raio.folha,
-    borderTopRightRadius: raio.folha,
-    paddingHorizontal: margem.conteudo,
-    paddingTop: espaco.seis,
-    paddingBottom: espaco.oito,
-    gap: espaco.dois,
-    ...sombraDaFolha,
-  },
   titulo: {
     fontFamily: tipo.nomeDoExercicio.fontFamily,
     fontSize: 26,
@@ -246,7 +238,8 @@ const estilos = StyleSheet.create({
   },
   salvarTocado: { backgroundColor: cor.acaoPressionada },
   salvarTexto: { ...tipo.rotuloPrimario, fontSize: 21, color: cor.sobreAcao },
-  partes: { gap: 7, paddingVertical: espaco.dois },
+  filaDePartes: { flexGrow: 0 },
+  partes: { gap: 7, paddingVertical: espaco.dois, alignItems: 'center' },
   parte: {
     borderRadius: raio.pilula,
     borderWidth: 2,

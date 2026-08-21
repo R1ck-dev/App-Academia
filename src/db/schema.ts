@@ -3,27 +3,23 @@
  * id texto (UUID do aparelho), instantes em epoch ms UTC, soft delete por
  * `arquivado_em`, cargas e medidas em inteiro (ver `treino-domain`).
  *
- * A decisão que organiza este arquivo: **a coluna onde o número mora é o
- * discriminante da unidade**. `carga_g` nunca contém placa, `carga_placas`
- * nunca contém quilo. Consequência prática: um `sum(carga_g * repeticoes)`
- * escrito às pressas continua certo, ignorando as placas — que é exatamente o
- * que se quer, já que somar "5 placas" com "42,5 kg" não significa nada.
+ * Carga tem uma unidade só: **grama**, em `carga_g`. Já houve uma segunda,
+ * `carga_placas` (o número do pino na coluna da máquina), com CHECK de XOR entre
+ * as duas e uma calibração para converter. Saiu em 21/08/2026 — placa só vira
+ * peso depois de calibrada, nenhuma máquina estava calibrada, e o efeito era
+ * volume que não somava. Com uma unidade só, `sum(carga_g * repeticoes)` é a
+ * conta inteira, sem ressalva.
  */
 
 import { sql } from 'drizzle-orm';
 import { check, index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /**
- * Unidade e tipo de medição são a mesma coisa, de propósito: uma coluna
- * `unidade` ao lado permitiria o estado impossível `peso_corporal` + `placa`.
+ * Como o exercício é medido, e portanto se ele tem carga. É um enum só, e não
+ * um par tipo+unidade, porque o par permitiria o estado impossível
+ * `peso_corporal` medido em quilo.
  */
-export const TIPOS_MEDICAO = [
-  'carga_kg',
-  'carga_placa',
-  'peso_corporal',
-  'tempo',
-  'distancia',
-] as const;
+export const TIPOS_MEDICAO = ['carga_kg', 'peso_corporal', 'tempo', 'distancia'] as const;
 export type TipoMedicao = (typeof TIPOS_MEDICAO)[number];
 
 /** Aquecimento não conta em volume nem em recorde. Ver `treino-domain`. */
@@ -51,7 +47,6 @@ export const PARTES_CORPO = [
 export type ParteCorpo = (typeof PARTES_CORPO)[number];
 
 /** Contrato das chaves de `preferencias`, num lugar só — string solta em dois arquivos é bug de update. */
-export const PREF_SEED_VERSAO = 'seed_versao';
 export const PREF_ULTIMO_TREINO = 'ultimo_treino';
 /** Instante do último backup exportado — o que a abertura do app usa no aviso. */
 export const PREF_ULTIMO_BACKUP = 'ultimo_backup';
@@ -72,15 +67,8 @@ export const exercicios = sqliteTable(
     equipamento: text('equipamento'),
     /** Sem default: criar exercício sem saber a unidade é impossível na origem. */
     tipoMedicao: text('tipo_medicao').$type<TipoMedicao>().notNull(),
-    /** Menor salto possível. Exatamente um dos dois, conforme o tipo. */
+    /** Menor salto possível, em grama. NULL onde não há carga. */
     incrementoG: integer('incremento_g'),
-    incrementoPlacas: integer('incremento_placas'),
-    /**
-     * Quanto pesa uma placa desta máquina, quando ele descobrir. NULL = não sei.
-     * Preenchido, todo o histórico ganha equivalente em kg na LEITURA — nenhuma
-     * linha de `series` é reescrita, então calibrar não perde nem falsifica dado.
-     */
-    gramasPorPlaca: integer('gramas_por_placa'),
     observacao: text('observacao'),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
@@ -90,17 +78,15 @@ export const exercicios = sqliteTable(
     index('idx_exercicios_nome').on(t.nome),
     check(
       'ck_exercicios_tipo',
-      sql`${t.tipoMedicao} in ('carga_kg', 'carga_placa', 'peso_corporal', 'tempo', 'distancia')`
+      sql`${t.tipoMedicao} in ('carga_kg', 'peso_corporal', 'tempo', 'distancia')`
     ),
+    // `is not null` explícito, e não só `> 0`: com a coluna nula o SQLite avalia
+    // `null > 0` como NULL, e um CHECK que devolve NULL PASSA — o exercício de
+    // kg entraria sem degrau nenhum, e a tela de execução ficaria sem "+"/"−".
     check(
       'ck_exercicios_incremento',
-      sql`(${t.tipoMedicao} = 'carga_kg' and ${t.incrementoG} > 0 and ${t.incrementoPlacas} is null)
-       or (${t.tipoMedicao} = 'carga_placa' and ${t.incrementoPlacas} between 1 and 5 and ${t.incrementoG} is null)
-       or (${t.tipoMedicao} in ('peso_corporal', 'tempo', 'distancia') and ${t.incrementoG} is null and ${t.incrementoPlacas} is null)`
-    ),
-    check(
-      'ck_exercicios_placa',
-      sql`${t.gramasPorPlaca} is null or (${t.tipoMedicao} = 'carga_placa' and ${t.gramasPorPlaca} > 0)`
+      sql`(${t.tipoMedicao} = 'carga_kg' and ${t.incrementoG} is not null and ${t.incrementoG} > 0)
+       or (${t.tipoMedicao} in ('peso_corporal', 'tempo', 'distancia') and ${t.incrementoG} is null)`
     ),
   ]
 );
@@ -135,7 +121,6 @@ export const treinoExercicios = sqliteTable(
     repsAlvoMin: integer('reps_alvo_min'),
     repsAlvoMax: integer('reps_alvo_max'),
     cargaAlvoG: integer('carga_alvo_g'),
-    cargaAlvoPlacas: integer('carga_alvo_placas'),
     /** "Esteira — 10 minutos" = 600. Sem isto o item vira mudo. */
     duracaoAlvoS: integer('duracao_alvo_s'),
     descansoS: integer('descanso_s').notNull().default(90),
@@ -146,11 +131,7 @@ export const treinoExercicios = sqliteTable(
   },
   (t) => [
     index('idx_treino_exercicios_treino').on(t.treinoId, t.ordem),
-    check('ck_te_uma_unidade', sql`${t.cargaAlvoG} is null or ${t.cargaAlvoPlacas} is null`),
-    check(
-      'ck_te_carga_positiva',
-      sql`(${t.cargaAlvoG} is null or ${t.cargaAlvoG} > 0) and (${t.cargaAlvoPlacas} is null or ${t.cargaAlvoPlacas} > 0)`
-    ),
+    check('ck_te_carga_positiva', sql`${t.cargaAlvoG} is null or ${t.cargaAlvoG} > 0`),
     check('ck_te_series_alvo', sql`${t.seriesAlvo} > 0`),
     check(
       'ck_te_reps_faixa',
@@ -195,8 +176,8 @@ export const sessoes = sqliteTable(
 
 /**
  * A série executada — a tabela que mais cresce e a que responde "estou
- * evoluindo?". Exatamente uma das duas cargas é preenchida, ou nenhuma
- * (peso corporal, tempo).
+ * evoluindo?". `carga_g` fica nula onde não há carga (peso corporal, tempo);
+ * NULL é "não se aplica", e zero seria "levantou zero quilo".
  */
 export const series = sqliteTable(
   'series',
@@ -211,7 +192,6 @@ export const series = sqliteTable(
     indice: integer('indice').notNull(),
     tipo: text('tipo').$type<TipoSerie>().notNull().default('valida'),
     cargaG: integer('carga_g'),
-    cargaPlacas: integer('carga_placas'),
     repeticoes: integer('repeticoes'),
     duracaoS: integer('duracao_s'),
     /** Repetições em reserva, 0 a 5. Null = não anotado, que é diferente de falha (0). */
@@ -227,11 +207,7 @@ export const series = sqliteTable(
     uniqueIndex('uq_series_sessao_exercicio_indice').on(t.sessaoId, t.exercicioId, t.indice),
     // O índice do histórico de evolução: "todas as séries deste exercício no tempo".
     index('idx_series_exercicio').on(t.exercicioId, t.concluidaEm),
-    check('ck_series_uma_unidade', sql`${t.cargaG} is null or ${t.cargaPlacas} is null`),
-    check(
-      'ck_series_carga_positiva',
-      sql`(${t.cargaG} is null or ${t.cargaG} > 0) and (${t.cargaPlacas} is null or ${t.cargaPlacas} > 0)`
-    ),
+    check('ck_series_carga_positiva', sql`${t.cargaG} is null or ${t.cargaG} > 0`),
     check('ck_series_tipo', sql`${t.tipo} in ('aquecimento', 'valida', 'falha')`),
     check('ck_series_rir', sql`${t.rir} is null or (${t.rir} between 0 and 5)`),
     check('ck_series_reps', sql`${t.repeticoes} is null or ${t.repeticoes} > 0`),

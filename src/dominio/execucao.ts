@@ -15,7 +15,7 @@
  */
 
 import type { TipoSerie } from '../db/schema.ts';
-import { valorDaCarga, type Carga } from './carga.ts';
+import type { Carga } from './carga.ts';
 import { cargaCompativel, medidoPorTempo, temCarga, type Exercicio } from './exercicio.ts';
 import type { HistoricoDoExercicio } from './recordes.ts';
 import { contaNoVolume, sugerirCarga, type Alvo, type SerieExecutada } from './volume.ts';
@@ -351,5 +351,5 @@ function somar<T>(itens: readonly T[], de: (item: T) => number): number {
 }
 
 function igual(a: Carga, b: Carga | null): boolean {
-  return b !== null && a.unidade === b.unidade && valorDaCarga(a) === valorDaCarga(b);
+  return b !== null && a.gramas === b.gramas;
 }

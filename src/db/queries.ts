@@ -53,11 +53,9 @@ function paraExercicio(l: typeof exercicios.$inferSelect): Exercicio {
     nome: l.nome,
     grupoMuscular: l.grupoMuscular,
     tipoMedicao: l.tipoMedicao,
-    // O par incremento_g/incremento_placas é a MESMA XOR de series.carga_*, e por
-    // isso usa o MESMO leitor: um segundo jeito de decidir unidade é um segundo
-    // lugar para errar.
-    incremento: cargaDaLinha({ cargaG: l.incrementoG, cargaPlacas: l.incrementoPlacas }),
-    gramasPorPlaca: l.gramasPorPlaca,
+    // Pelo MESMO leitor de `series.carga_g`: um segundo jeito de transformar
+    // coluna em `Carga` é um segundo lugar para errar.
+    incremento: cargaDaLinha({ cargaG: l.incrementoG }),
     arquivadoEm: l.arquivadoEm,
   };
 }
@@ -195,7 +193,7 @@ export function itensDoTreino(treinoId: string): ItemDoPlano[] {
       seriesAlvo: item.seriesAlvo,
       repsAlvoMin: item.repsAlvoMin,
       repsAlvoMax: item.repsAlvoMax,
-      cargaAlvo: cargaDaLinha({ cargaG: item.cargaAlvoG, cargaPlacas: item.cargaAlvoPlacas }),
+      cargaAlvo: cargaDaLinha({ cargaG: item.cargaAlvoG }),
       duracaoAlvoS: item.duracaoAlvoS,
       descansoS: item.descansoS,
     }));
@@ -245,7 +243,6 @@ export function seriesDaSessaoComExercicio(sessaoId: string): SerieComExercicio[
       ...paraSerie(serie),
       exercicioNome: exercicio.nome,
       tipoMedicao: exercicio.tipoMedicao,
-      gramasPorPlaca: exercicio.gramasPorPlaca,
     }));
 }
 
@@ -449,28 +446,19 @@ export type ResumoDeSessao = {
   finalizadaEm: number | null;
   totalSeries: number;
   gramasReps: number;
-  /**
-   * Quanto de `gramasReps` veio de placa CONVERTIDA. É o gancho do til: a
-   * conversão assume resistência proporcional ao número de placas, que alavanca
-   * e roldana não garantem. O par existe aqui pelo mesmo motivo que
-   * `VolumeDaSessao.gramasRepsAproximados` existe no domínio — sem ele a lista
-   * imprime um número derivado de estimativa com cara de medição.
-   */
-  gramasRepsAproximados: number;
 };
 
 /** O volume de UMA série em grama·rep, ou NULL quando não dá para somar. */
 const VOLUME_DA_SERIE = sql`case when ${series.tipo} <> 'aquecimento'
-  then coalesce(${series.cargaG}, ${series.cargaPlacas} * ${exercicios.gramasPorPlaca}) * ${series.repeticoes}
+  then ${series.cargaG} * ${series.repeticoes}
 end`;
 
 /**
  * A aba Histórico numa consulta só.
  *
- * `gramasReps` converte placa calibrada em grama e deixa a não-calibrada de fora
- * (o produto vira NULL e o `sum` o ignora), que é exatamente o critério de
- * `volumeDaSerie` — se a lista somasse a placa crua, abrir a sessão mostraria um
- * volume diferente do que a lista acabou de exibir.
+ * `gramasReps` deixa de fora o que não tem carga (o produto vira NULL e o `sum`
+ * o ignora), que é exatamente o critério de `volumeDaSerie` — se a lista usasse
+ * outro, abrir a sessão mostraria um volume diferente do que a lista exibiu.
  *
  * `totalSeries` conta TODAS as séries não arquivadas, aquecimento incluído: é
  * "quanto trabalho teve o dia", não a base do volume.
@@ -484,15 +472,9 @@ export function sessoesFinalizadas(limite?: number): ResumoDeSessao[] {
       finalizadaEm: sessoes.finalizadaEm,
       totalSeries: sql<number>`count(${series.id})`.mapWith(Number),
       gramasReps: sql<number>`coalesce(sum(${VOLUME_DA_SERIE}), 0)`.mapWith(Number),
-      // A MESMA expressão, restrita à coluna de placa: o que foi convertido é
-      // exatamente o que mora em `carga_placas`.
-      gramasRepsAproximados: sql<number>`coalesce(sum(case
-        when ${series.cargaPlacas} is not null then ${VOLUME_DA_SERIE}
-      end), 0)`.mapWith(Number),
     })
     .from(sessoes)
     .leftJoin(series, and(eq(series.sessaoId, sessoes.id), isNull(series.arquivadoEm)))
-    .leftJoin(exercicios, eq(exercicios.id, series.exercicioId))
     .where(and(isNotNull(sessoes.finalizadaEm), isNull(sessoes.arquivadoEm)))
     .groupBy(sessoes.id)
     .orderBy(desc(sessoes.iniciadaEm))

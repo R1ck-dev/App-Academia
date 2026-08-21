@@ -6,23 +6,30 @@
  * O contexto de uso é o oposto da execução: em casa, sentado, uma vez a cada
  * poucas semanas. Por isso aqui cabe formulário, e lá não cabia nem um campo.
  *
- * A decisão mais cara desta tela é o **tipo de medição** — ele define a unidade
- * de tudo que for registrado depois. Trocá-lo num exercício com histórico é
- * conversão destrutiva, e `alterarTipoMedicao` recusa quando já existe série.
- * A folha não esconde isso: diz onde a troca mora e por que ela não é aqui.
+ * A decisão mais cara desta tela é o **tipo de medição** — ele diz se o
+ * exercício tem carga. Trocá-lo num exercício com histórico deixaria séries sem
+ * a carga que o tipo novo exige, e `alterarTipoMedicao` recusa quando já existe
+ * série.
+ *
+ * O catálogo começa VAZIO, de propósito: escolher entre 24 nomes prontos era
+ * mais lento do que digitar o nome da máquina que ele tem na frente. Por isso a
+ * folha abre direto no modo de criação enquanto não houver exercício nenhum.
  */
 
 import { useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Folha } from '@/components/folha';
 import { useConsulta } from '@/components/progresso-consulta';
-import { alvo as alvoDeToque, cor, espaco, margem, raio, sombraDaFolha, tipo } from '@/constants/tema';
+import { alvo as alvoDeToque, cor, espaco, margem, raio, tipo } from '@/constants/tema';
 import {
+  arquivarTreino,
   atualizarItemDoTreino,
   criarExercicio,
   definirCargaAlvo,
   definirItemDoTreino,
+  editarTreino,
   removerItemDoTreino,
   reordenarItensDoTreino,
 } from '@/db/mutations';
@@ -30,7 +37,7 @@ import { itensDoTreino, listarExercicios } from '@/db/queries';
 import { TIPOS_MEDICAO, type TipoMedicao } from '@/db/schema';
 import { formatarCarga, parseCarga } from '@/dominio/carga';
 import { formatarDuracao } from '@/dominio/datas';
-import { rotuloDoTipoMedicao, temCarga, unidadeDoTipo, type Exercicio } from '@/dominio/exercicio';
+import { rotuloDoTipoMedicao, temCarga, type Exercicio } from '@/dominio/exercicio';
 import type { ItemDoPlano } from '@/dominio/execucao';
 
 export function TelaDaFicha({
@@ -46,6 +53,7 @@ export function TelaDaFicha({
 }) {
   const [itemAberto, setItemAberto] = useState<string | null>(null);
   const [catalogoAberto, setCatalogoAberto] = useState(false);
+  const [renomeando, setRenomeando] = useState(false);
 
   const itens = useConsulta(`Ficha:${treinoId}`, () => itensDoTreino(treinoId));
   const emEdicao = itens.find((i) => i.itemId === itemAberto) ?? null;
@@ -59,14 +67,23 @@ export function TelaDaFicha({
             <Text style={estilos.voltar}>voltar</Text>
           </Pressable>
         </View>
-        <Text style={estilos.titulo}>
-          {nome}
-          {descricao === null ? '' : ` — ${descricao}`}
-        </Text>
-        <Text style={estilos.sub}>toque para editar</Text>
+        <Pressable onPress={() => setRenomeando(true)}>
+          <Text style={estilos.titulo}>
+            {nome}
+            {descricao === null ? '' : ` — ${descricao}`}
+          </Text>
+        </Pressable>
+        <Text style={estilos.sub}>toque no título para renomear · no exercício para editar</Text>
       </View>
 
       <ScrollView style={estilos.expandir} contentContainerStyle={estilos.lista}>
+        {itens.length > 0 ? null : (
+          <Text style={estilos.vazio}>
+            Ficha vazia. Acrescente o primeiro exercício — o nome é o que estiver escrito na
+            máquina.
+          </Text>
+        )}
+
         {itens.map((item, i) => (
           <Pressable
             key={item.itemId}
@@ -89,7 +106,11 @@ export function TelaDaFicha({
           style={({ pressed }) => [estilos.adicionar, pressed && estilos.adicionarTocado]}
           onPress={() => setCatalogoAberto(true)}
         >
-          <Text style={estilos.adicionarTexto}>+ adicionar do catálogo</Text>
+          <Text style={estilos.adicionarTexto}>+ adicionar exercício</Text>
+        </Pressable>
+
+        <Pressable style={estilos.apagar} onPress={() => confirmarApagar(nome, treinoId, aoVoltar)}>
+          <Text style={estilos.apagarTexto}>Apagar este treino</Text>
         </Pressable>
       </ScrollView>
 
@@ -118,6 +139,18 @@ export function TelaDaFicha({
           aoFechar={() => setCatalogoAberto(false)}
         />
       ) : null}
+
+      {renomeando ? (
+        <FolhaDoTreino
+          nome={nome}
+          descricao={descricao}
+          aoSalvar={(dados) => {
+            editarTreino(treinoId, dados);
+            setRenomeando(false);
+          }}
+          aoFechar={() => setRenomeando(false)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -138,7 +171,6 @@ function FolhaDoItem({
   aoFechar: () => void;
 }) {
   const ex = item.exercicio;
-  const unidade = unidadeDoTipo(ex.tipoMedicao);
   const [series, setSeries] = useState(String(item.seriesAlvo));
   const [reps, setReps] = useState(item.repsAlvoMin === null ? '' : String(item.repsAlvoMin));
   const [carga, setCarga] = useState(item.cargaAlvo === null ? '' : String(valorDoTexto(item)));
@@ -164,11 +196,11 @@ function FolhaDoItem({
 
     // A carga passa por `definirCargaAlvo` e não por `atualizarItemDoTreino`: a
     // carga da ficha é decisão, e a mutation valida a unidade contra o exercício.
-    if (unidade !== null) {
+    if (temCarga(ex.tipoMedicao)) {
       if (carga.trim() === '') {
         definirCargaAlvo(item.itemId, null);
       } else {
-        const r = parseCarga(carga, unidade);
+        const r = parseCarga(carga);
         if (!r.ok) {
           setErro(r.erro);
           return;
@@ -213,9 +245,9 @@ function FolhaDoItem({
       <View style={estilos.campos}>
         <Campo rotulo="Séries" valor={series} aoMudar={setSeries} />
         <Campo rotulo="Repetições" valor={reps} aoMudar={setReps} />
-        {unidade === null ? null : (
+        {!temCarga(ex.tipoMedicao) ? null : (
           <Campo
-            rotulo={`Carga alvo (${unidade})`}
+            rotulo="Carga alvo (kg)"
             valor={carga}
             aoMudar={setCarga}
             placeholder="vazio = sem carga"
@@ -255,10 +287,6 @@ function FolhaDoItem({
         </Pressable>
       </View>
 
-      <Text style={estilos.notaDaFolha}>
-        Trocar a unidade de medição fica no catálogo — em exercício com histórico ela é
-        irreversível.
-      </Text>
     </Folha>
   );
 }
@@ -276,12 +304,16 @@ function FolhaDoCatalogo({
   jaNaFicha: readonly string[];
   aoFechar: () => void;
 }) {
-  const [criando, setCriando] = useState(false);
-  const [nome, setNome] = useState('');
-  const [medida, setMedida] = useState<TipoMedicao>('carga_placa');
-  const [erro, setErro] = useState<string | null>(null);
-
   const exercicios = useConsulta('Catalogo', listarExercicios);
+  // Catálogo vazio abre direto em "criar": mostrar uma lista sem nada e obrigar
+  // a um toque em "criar exercício novo" seria um passo que não decide nada.
+  const [criando, setCriando] = useState(exercicios.length === 0);
+  const [nome, setNome] = useState('');
+  const [medida, setMedida] = useState<TipoMedicao>('carga_kg');
+  const [series, setSeries] = useState('4');
+  const [reps, setReps] = useState('10');
+  const [carga, setCarga] = useState('');
+  const [erro, setErro] = useState<string | null>(null);
 
   function adicionar(ex: Exercicio) {
     definirItemDoTreino({
@@ -295,20 +327,47 @@ function FolhaDoCatalogo({
     aoFechar();
   }
 
+  /**
+   * Cria e JÁ põe na ficha, com séries, repetições e carga. Antes entrava com
+   * 4×10 fixo e sem carga — o que fazia a primeira série do exercício novo cair
+   * em "sem referência" e exigir abrir a folha do item para completar.
+   */
   function criar() {
     if (nome.trim() === '') {
       setErro('O exercício precisa de um nome.');
       return;
     }
+    const numeroDeSeries = Number(series);
+    if (!Number.isInteger(numeroDeSeries) || numeroDeSeries <= 0) {
+      setErro('Séries tem que ser um número inteiro maior que zero.');
+      return;
+    }
+    const numeroDeReps = reps.trim() === '' ? null : Number(reps);
+    if (numeroDeReps !== null && (!Number.isInteger(numeroDeReps) || numeroDeReps <= 0)) {
+      setErro('Repetições tem que ser um número inteiro maior que zero.');
+      return;
+    }
+    // Carga em branco é legítima: a estreia cai no teclado da execução.
+    let cargaAlvo = null;
+    if (temCarga(medida) && carga.trim() !== '') {
+      const r = parseCarga(carga);
+      if (!r.ok) {
+        setErro(r.erro);
+        return;
+      }
+      cargaAlvo = r.carga;
+    }
+
     try {
       const id = criarExercicio({ nome: nome.trim(), tipoMedicao: medida });
       definirItemDoTreino({
         treinoId,
         exercicioId: id,
         ordem: proximaOrdem,
-        seriesAlvo: 4,
-        repsAlvoMin: 10,
-        repsAlvoMax: 10,
+        seriesAlvo: numeroDeSeries,
+        repsAlvoMin: numeroDeReps,
+        repsAlvoMax: numeroDeReps,
+        cargaAlvo,
       });
       aoFechar();
     } catch (e) {
@@ -328,7 +387,9 @@ function FolhaDoCatalogo({
       {criando ? (
         <>
           <Campo rotulo="Nome" valor={nome} aoMudar={setNome} teclado="default" />
-          <Text style={estilos.notaDaFolha}>Como ele é medido — isto define a unidade para sempre.</Text>
+          <Text style={estilos.notaDaFolha}>
+            Como ele é medido — isto decide se ele tem carga, e não muda depois da primeira série.
+          </Text>
           <View style={estilos.medidas}>
             {TIPOS_MEDICAO.map((t) => {
               const ativo = t === medida;
@@ -345,19 +406,37 @@ function FolhaDoCatalogo({
               );
             })}
           </View>
+          <View style={estilos.campos}>
+            <Campo rotulo="Séries" valor={series} aoMudar={setSeries} />
+            <Campo rotulo="Repetições" valor={reps} aoMudar={setReps} />
+            {!temCarga(medida) ? null : (
+              <Campo
+                rotulo="Carga alvo (kg)"
+                valor={carga}
+                aoMudar={setCarga}
+                placeholder="vazio = pergunta na hora"
+              />
+            )}
+          </View>
+
           {erro === null ? null : <Text style={estilos.erro}>{erro}</Text>}
           <View style={estilos.acoesDaFolha}>
             <Pressable style={estilos.salvar} onPress={criar}>
               <Text style={estilos.salvarTexto}>Criar e adicionar</Text>
             </Pressable>
-            <Pressable style={estilos.secundario} onPress={() => setCriando(false)}>
-              <Text style={estilos.secundarioTexto}>Voltar</Text>
-            </Pressable>
+            {exercicios.length === 0 ? null : (
+              <Pressable style={estilos.secundario} onPress={() => setCriando(false)}>
+                <Text style={estilos.secundarioTexto}>Ver o catálogo</Text>
+              </Pressable>
+            )}
           </View>
         </>
       ) : (
         <>
-          <ScrollView style={estilos.rolagemDoCatalogo}>
+          {/* `View` e não `ScrollView`: a própria `Folha` já rola. Duas rolagens
+              verticais aninhadas disputam o gesto no Android, e a de dentro
+              ganha — deixando a de fora presa quando o dedo cai na lista. */}
+          <View style={estilos.rolagemDoCatalogo}>
             {exercicios.map((ex) => (
               <Pressable
                 key={ex.id}
@@ -371,7 +450,7 @@ function FolhaDoCatalogo({
                 </Text>
               </Pressable>
             ))}
-          </ScrollView>
+          </View>
           <Pressable style={estilos.salvar} onPress={() => setCriando(true)}>
             <Text style={estilos.salvarTexto}>Criar exercício novo</Text>
           </Pressable>
@@ -381,18 +460,79 @@ function FolhaDoCatalogo({
   );
 }
 
-// ── Apoio ──────────────────────────────────────────────────────────────────
+// ── Folha do treino ────────────────────────────────────────────────────────
 
-function Folha({ children, aoFechar }: { children: React.ReactNode; aoFechar: () => void }) {
+/** Renomear a ficha. Não toca no histórico: `sessoes.nome` é cópia da abertura. */
+function FolhaDoTreino({
+  nome,
+  descricao,
+  aoSalvar,
+  aoFechar,
+}: {
+  nome: string;
+  descricao: string | null;
+  aoSalvar: (dados: { nome: string; descricao: string | null }) => void;
+  aoFechar: () => void;
+}) {
+  const [texto, setTexto] = useState(nome);
+  const [detalhe, setDetalhe] = useState(descricao ?? '');
+  const [erro, setErro] = useState<string | null>(null);
+
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={aoFechar}>
-      <View style={estilos.fundoDaFolha}>
-        <Pressable style={estilos.areaDaFolha} onPress={aoFechar} />
-        <View style={estilos.folha}>{children}</View>
+    <Folha aoFechar={aoFechar}>
+      <View style={estilos.linhaDoTopo}>
+        <Text style={estilos.tituloDaFolha}>Renomear treino</Text>
+        <Pressable onPress={aoFechar} hitSlop={12}>
+          <Text style={estilos.fechar}>fechar</Text>
+        </Pressable>
       </View>
-    </Modal>
+      <Text style={estilos.notaDaFolha}>
+        As sessões já registradas guardam o nome antigo — renomear não reescreve o histórico.
+      </Text>
+
+      <Campo rotulo="Nome" valor={texto} aoMudar={setTexto} teclado="default" />
+      <Campo
+        rotulo="Descrição"
+        valor={detalhe}
+        aoMudar={setDetalhe}
+        teclado="default"
+        placeholder="Costas, bíceps e ombros"
+      />
+
+      {erro === null ? null : <Text style={estilos.erro}>{erro}</Text>}
+
+      <Pressable
+        style={({ pressed }) => [estilos.salvar, pressed && estilos.salvarTocado]}
+        onPress={() => {
+          if (texto.trim() === '') {
+            setErro('O treino precisa de um nome.');
+            return;
+          }
+          aoSalvar({ nome: texto.trim(), descricao: detalhe.trim() === '' ? null : detalhe.trim() });
+        }}
+      >
+        <Text style={estilos.salvarTexto}>Salvar</Text>
+      </Pressable>
+    </Folha>
   );
 }
+
+/** Soft delete: as sessões já feitas continuam no histórico com o nome copiado. */
+function confirmarApagar(nome: string, treinoId: string, aoVoltar: () => void) {
+  Alert.alert('Apagar este treino?', `${nome} sai da lista. As sessões já feitas continuam no histórico.`, [
+    { text: 'Manter', style: 'cancel' },
+    {
+      text: 'Apagar',
+      style: 'destructive',
+      onPress: () => {
+        arquivarTreino(treinoId);
+        aoVoltar();
+      },
+    },
+  ]);
+}
+
+// ── Apoio ──────────────────────────────────────────────────────────────────
 
 function Campo({
   rotulo,
@@ -422,14 +562,13 @@ function Campo({
   );
 }
 
-/** O número da carga na unidade do exercício, para o campo abrir preenchido. */
+/** O número da carga em quilo, para o campo abrir preenchido. */
 function valorDoTexto(item: ItemDoPlano): string {
   const c = item.cargaAlvo;
-  if (c === null) return '';
-  return c.unidade === 'kg' ? String(c.gramas / 1000).replace('.', ',') : String(c.placas);
+  return c === null ? '' : String(c.gramas / 1000).replace('.', ',');
 }
 
-/** "4×10 · 5 placas" — o plano, do jeito que está escrito na ficha. */
+/** "4×10 · 20 kg" — o plano, do jeito que está escrito na ficha. */
 function textoDoAlvo(item: ItemDoPlano): string {
   const partes: string[] = [];
   if (item.seriesAlvo > 0) {
@@ -504,19 +643,7 @@ const estilos = StyleSheet.create({
   adicionarTocado: { backgroundColor: cor.acaoTinta },
   adicionarTexto: { ...tipo.rotuloForte, color: cor.textoSecundario },
 
-  fundoDaFolha: { flex: 1, backgroundColor: 'rgba(46,43,37,0.5)', justifyContent: 'flex-end' },
-  areaDaFolha: { flex: 1 },
-  folha: {
-    backgroundColor: cor.superficieElevada,
-    borderTopLeftRadius: raio.folha,
-    borderTopRightRadius: raio.folha,
-    paddingHorizontal: espaco.seis,
-    paddingTop: espaco.seis,
-    paddingBottom: espaco.oito,
-    gap: espaco.dois,
-    maxHeight: '86%',
-    ...sombraDaFolha,
-  },
+
   tituloDaFolha: {
     flex: 1,
     fontFamily: tipo.nomeDoExercicio.fontFamily,
@@ -578,7 +705,10 @@ const estilos = StyleSheet.create({
   },
   secundarioTexto: { ...tipo.rotuloForte, color: cor.textoSecundario },
 
-  rolagemDoCatalogo: { maxHeight: 360, marginVertical: espaco.dois },
+  rolagemDoCatalogo: { marginVertical: espaco.dois },
+  vazio: { ...tipo.corpoMenor, color: cor.textoSecundario, paddingBottom: espaco.dois },
+  apagar: { marginTop: espaco.seis, alignItems: 'center', paddingVertical: espaco.tres },
+  apagarTexto: { ...tipo.rotuloCompacto, color: cor.textoTerciario },
   linhaDoCatalogo: {
     paddingVertical: espaco.tres,
     paddingHorizontal: espaco.quatro,

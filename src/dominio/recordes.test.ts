@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { kg, placa } from './carga.ts';
+import { kg } from './carga.ts';
 import type { Exercicio } from './exercicio.ts';
 import { calcularRecordes, estimar1RM, novoRecorde, type Recordes } from './recordes.ts';
 import type { SerieExecutada } from './volume.ts';
@@ -26,17 +26,6 @@ const supino: Exercicio = {
   grupoMuscular: 'peito',
   tipoMedicao: 'carga_kg',
   incremento: kg(2500),
-  gramasPorPlaca: null,
-  arquivadoEm: null,
-};
-
-const remadaAlta: Exercicio = {
-  id: 'ex-remada',
-  nome: 'Remada Alta',
-  grupoMuscular: 'costas',
-  tipoMedicao: 'carga_placa',
-  incremento: placa(1),
-  gramasPorPlaca: null,
   arquivadoEm: null,
 };
 
@@ -65,7 +54,6 @@ describe('calcularRecordes', () => {
       maiorReps: null,
       maiorRepsNaCarga: null,
       totalDeSeries: 0,
-      umRMAproximado: false,
     } satisfies Recordes);
   });
 
@@ -84,7 +72,6 @@ describe('calcularRecordes', () => {
     const longa = serie({ id: 'l', indice: 1, carga: kg(40000), repeticoes: 15 });
     const r = calcularRecordes({ exercicio: supino, series: [pesada, longa] });
     assert.deepEqual(r.maior1RM, estimar1RM(kg(60000), 3));
-    assert.equal(r.umRMAproximado, false);
   });
 
   it('volume é por sessão, não somando o histórico todo', () => {
@@ -94,36 +81,20 @@ describe('calcularRecordes', () => {
       serie({ id: 'c', sessaoId: 's2', indice: 0, repeticoes: 12 }),
     ];
     const r = calcularRecordes({ exercicio: supino, series });
-    assert.deepEqual(r.maiorVolumeSessao, { valor: 800000, unidade: 'kg' });
+    assert.deepEqual(r.maiorVolumeSessao, { valor: 800000 });
   });
 
-  const historicoEmPlaca = [
-    serie({ id: 'r0', exercicioId: 'ex-remada', indice: 0, carga: placa(5), repeticoes: 12 }),
-    serie({ id: 'r1', exercicioId: 'ex-remada', indice: 1, carga: placa(6), repeticoes: 8 }),
-  ];
+  it('desempata o recorde de repetições pela carga', () => {
+    // 12 reps com 30 kg é um recorde melhor que 12 reps com 25, e a tela
+    // precisa mostrar a carga certa ao lado do número.
+    const series = [
+      serie({ id: 'a', indice: 0, carga: kg(25000), repeticoes: 12 }),
+      serie({ id: 'b', indice: 1, carga: kg(30000), repeticoes: 12 }),
+    ];
+    const r = calcularRecordes({ exercicio: supino, series });
 
-  it('placa NÃO calibrada: sem 1RM, mas com recorde de carga e de repetições', () => {
-    const r = calcularRecordes({ exercicio: remadaAlta, series: historicoEmPlaca });
-
-    assert.equal(r.maior1RM, null, '1RM em placa crua seria ficção');
-    assert.equal(r.umRMAproximado, false);
-    assert.deepEqual(r.maiorCarga, placa(6));
     assert.equal(r.maiorReps, 12);
-    assert.deepEqual(r.maiorRepsNaCarga, placa(5));
-    assert.deepEqual(r.maiorVolumeSessao, { valor: 5 * 12 + 6 * 8, unidade: 'placa' });
-    assert.equal(r.totalDeSeries, 2);
-  });
-
-  it('depois de calibrar, o MESMO histórico ganha 1RM retroativamente e marcado como aproximado', () => {
-    const calibrada: Exercicio = { ...remadaAlta, gramasPorPlaca: 5000 };
-    const r = calcularRecordes({ exercicio: calibrada, series: historicoEmPlaca });
-
-    // 6 placas x 5 kg = 30 kg em 8 reps ganha de 5 placas (25 kg) em 12.
-    assert.deepEqual(r.maior1RM, estimar1RM(kg(30000), 8));
-    assert.equal(r.umRMAproximado, true);
-    // O que é da escala da máquina não se converte: carga e volume seguem em placa.
-    assert.deepEqual(r.maiorCarga, placa(6));
-    assert.deepEqual(r.maiorVolumeSessao, { valor: 5 * 12 + 6 * 8, unidade: 'placa' });
+    assert.deepEqual(r.maiorRepsNaCarga, kg(30000));
   });
 
   it('peso corporal tem recorde de repetições e nada mais', () => {
@@ -133,7 +104,6 @@ describe('calcularRecordes', () => {
       grupoMuscular: 'abdomen',
       tipoMedicao: 'peso_corporal',
       incremento: null,
-      gramasPorPlaca: null,
       arquivadoEm: null,
     };
     const series = [
@@ -201,24 +171,33 @@ describe('novoRecorde', () => {
     });
   });
 
-  it('em placa sem calibração o selo de repetições continua existindo, o de 1RM não', () => {
-    const semRecorde = calcularRecordes({ exercicio: remadaAlta, series: [] });
-    const nova = serie({ id: 'n', exercicioId: 'ex-remada', carga: placa(5), repeticoes: 12 });
-    assert.deepEqual(novoRecorde(nova, remadaAlta, semRecorde), {
+  it('a primeira série de um exercício é recorde nos três selos', () => {
+    const semRecorde = calcularRecordes({ exercicio: supino, series: [] });
+    const nova = serie({ id: 'n', carga: kg(40000), repeticoes: 12 });
+    assert.deepEqual(novoRecorde(nova, supino, semRecorde), {
       carga: true,
-      umRM: false,
+      umRM: true,
       reps: true,
     });
   });
 
-  it('carga de outra unidade não vira recorde — é outra escala, não um número maior', () => {
-    const emPlaca = calcularRecordes({
-      exercicio: remadaAlta,
-      series: [serie({ exercicioId: 'ex-remada', carga: placa(5), repeticoes: 10 })],
+  it('carga num exercício de peso corporal não vira recorde de carga', () => {
+    const abdominal: Exercicio = {
+      id: 'ex-abdominal',
+      nome: 'Abdominal Supra Solo',
+      grupoMuscular: 'abdomen',
+      tipoMedicao: 'peso_corporal',
+      incremento: null,
+      arquivadoEm: null,
+    };
+    const antes = calcularRecordes({
+      exercicio: abdominal,
+      series: [serie({ exercicioId: 'ex-abdominal', carga: null, repeticoes: 20 })],
     });
-    // Só chega aqui se `registrarSerie` for burlada; 40000 não pode ganhar de 5.
-    const intrusa = serie({ id: 'n', exercicioId: 'ex-remada', indice: 1, carga: kg(40000) });
-    assert.deepEqual(novoRecorde(intrusa, remadaAlta, emPlaca), {
+    // Só chega aqui se `registrarSerie` for burlada: carga onde não cabe carga
+    // não é um recorde, é dado inválido.
+    const intrusa = serie({ id: 'n', exercicioId: 'ex-abdominal', indice: 1, carga: kg(40000), repeticoes: 10 });
+    assert.deepEqual(novoRecorde(intrusa, abdominal, antes), {
       carga: false,
       umRM: false,
       reps: false,

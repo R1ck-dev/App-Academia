@@ -13,7 +13,7 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { eq } from 'drizzle-orm';
 
-import { kg, placa } from '../dominio/carga.ts';
+import { kg } from '../dominio/carga.ts';
 import { volumeDaSessao } from '../dominio/volume.ts';
 import { criarBancoDeTeste } from './banco-de-teste.ts';
 import { db } from './conexao.ts';
@@ -61,18 +61,12 @@ function exercicio(d: {
   id: string;
   nome: string;
   tipoMedicao: TipoMedicao;
-  gramasPorPlaca?: number;
   grupoMuscular?: string;
   arquivadoEm?: number;
 }) {
-  // O incremento segue o tipo porque `ck_exercicios_incremento` exige: kg em
-  // gramas, placa em placas, nenhum nos demais.
-  const incremento =
-    d.tipoMedicao === 'carga_kg'
-      ? { incrementoG: 2500 }
-      : d.tipoMedicao === 'carga_placa'
-        ? { incrementoPlacas: 1 }
-        : {};
+  // `ck_exercicios_incremento` exige o par coerente: quem tem carga tem degrau,
+  // quem não tem, não.
+  const incremento = d.tipoMedicao === 'carga_kg' ? { incrementoG: 2500 } : {};
   db.insert(exercicios)
     .values({ criadoEm: T, atualizadoEm: T, ...incremento, ...d })
     .run();
@@ -101,7 +95,6 @@ function serie(d: {
   concluidaEm: number;
   tipo?: TipoSerie;
   cargaG?: number;
-  cargaPlacas?: number;
   repeticoes?: number;
   duracaoS?: number;
   arquivadoEm?: number;
@@ -128,7 +121,6 @@ function item(d: {
   repsAlvoMin?: number;
   repsAlvoMax?: number;
   cargaAlvoG?: number;
-  cargaAlvoPlacas?: number;
   duracaoAlvoS?: number;
   descansoS?: number;
   arquivadoEm?: number;
@@ -160,7 +152,7 @@ beforeEach(() => {
 describe('catálogo', () => {
   it('lê o incremento pela coluna em que ele mora e esconde o arquivado', () => {
     exercicio({ id: 'ex-supino', nome: 'Supino inclinado', tipoMedicao: 'carga_kg' });
-    exercicio({ id: 'ex-peck', nome: 'Peck dorsal', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex-peck', nome: 'Peck dorsal', tipoMedicao: 'carga_kg' });
     exercicio({ id: 'ex-abd', nome: 'Abdominal supra', tipoMedicao: 'peso_corporal' });
     exercicio({ id: 'ex-velho', nome: 'A esquecer', tipoMedicao: 'carga_kg', arquivadoEm: T });
 
@@ -170,13 +162,13 @@ describe('catálogo', () => {
       lista.map((e) => e.nome),
       ['Abdominal supra', 'Peck dorsal', 'Supino inclinado']
     );
-    assert.deepEqual(lista[1].incremento, placa(1));
+    assert.deepEqual(lista[1].incremento, kg(2500));
     assert.deepEqual(lista[2].incremento, kg(2500));
     assert.equal(lista[0].incremento, null);
   });
 
   it('obterExercicio devolve o arquivado — é dele o histórico que a tela ainda mostra', () => {
-    exercicio({ id: 'ex-velho', nome: 'Facepull', tipoMedicao: 'carga_placa', arquivadoEm: T });
+    exercicio({ id: 'ex-velho', nome: 'Facepull', tipoMedicao: 'carga_kg', arquivadoEm: T });
 
     assert.equal(obterExercicio('ex-velho')?.nome, 'Facepull');
     assert.equal(obterExercicio('ex-velho')?.arquivadoEm, T);
@@ -189,21 +181,21 @@ describe('catálogo', () => {
 describe('séries da sessão', () => {
   beforeEach(() => {
     exercicio({ id: 'ex-kg', nome: 'Supino', tipoMedicao: 'carga_kg' });
-    exercicio({ id: 'ex-placa', nome: 'Peck', tipoMedicao: 'carga_placa', gramasPorPlaca: 5000 });
+    exercicio({ id: 'ex-placa', nome: 'Peck', tipoMedicao: 'carga_kg' });
     exercicio({ id: 'ex-corpo', nome: 'Abdominal', tipoMedicao: 'peso_corporal' });
     sessao({ id: 's1', nome: 'Treino A', iniciadaEm: T });
   });
 
   it('a coluna onde o número mora vira a unidade da Carga', () => {
     serie({ id: 'a', sessaoId: 's1', exercicioId: 'ex-kg', indice: 0, cargaG: 42500, repeticoes: 10, concluidaEm: T + MIN });
-    serie({ id: 'b', sessaoId: 's1', exercicioId: 'ex-placa', indice: 0, cargaPlacas: 5, repeticoes: 12, concluidaEm: T + 2 * MIN });
+    serie({ id: 'b', sessaoId: 's1', exercicioId: 'ex-placa', indice: 0, cargaG: 25000, repeticoes: 12, concluidaEm: T + 2 * MIN });
     serie({ id: 'c', sessaoId: 's1', exercicioId: 'ex-corpo', indice: 0, repeticoes: 15, concluidaEm: T + 3 * MIN });
 
     const feitas = seriesDaSessao('s1');
 
     assert.deepEqual(
       feitas.map((s) => s.carga),
-      [kg(42500), placa(5), null]
+      [kg(42500), kg(25000), null]
     );
   });
 
@@ -218,16 +210,15 @@ describe('séries da sessão', () => {
     );
   });
 
-  it('traz nome, tipo e calibração junto — inclusive de exercício arquivado depois', () => {
-    serie({ id: 'a', sessaoId: 's1', exercicioId: 'ex-placa', indice: 0, cargaPlacas: 5, repeticoes: 12, concluidaEm: T + MIN });
+  it('traz nome e tipo junto — inclusive de exercício arquivado depois', () => {
+    serie({ id: 'a', sessaoId: 's1', exercicioId: 'ex-placa', indice: 0, cargaG: 25000, repeticoes: 12, concluidaEm: T + MIN });
     db.update(exercicios).set({ arquivadoEm: T + DIA }).where(eq(exercicios.id, 'ex-placa')).run();
 
     const [s] = seriesDaSessaoComExercicio('s1');
 
     assert.equal(s.exercicioNome, 'Peck');
-    assert.equal(s.tipoMedicao, 'carga_placa');
-    assert.equal(s.gramasPorPlaca, 5000);
-    assert.deepEqual(s.carga, placa(5));
+    assert.equal(s.tipoMedicao, 'carga_kg');
+    assert.deepEqual(s.carga, kg(25000));
   });
 });
 
@@ -235,11 +226,11 @@ describe('séries da sessão', () => {
 
 describe('índices ocupados', () => {
   it('conta a série arquivada — o UNIQUE do banco também não a libera', () => {
-    exercicio({ id: 'ex', nome: 'Remada', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex', nome: 'Remada', tipoMedicao: 'carga_kg' });
     sessao({ id: 's1', nome: 'Treino A', iniciadaEm: T });
-    serie({ id: 'a', sessaoId: 's1', exercicioId: 'ex', indice: 0, cargaPlacas: 5, repeticoes: 10, concluidaEm: T + MIN });
-    serie({ id: 'b', sessaoId: 's1', exercicioId: 'ex', indice: 1, cargaPlacas: 5, repeticoes: 10, concluidaEm: T + 2 * MIN });
-    serie({ id: 'c', sessaoId: 's1', exercicioId: 'ex', indice: 2, cargaPlacas: 5, repeticoes: 10, concluidaEm: T + 3 * MIN, arquivadoEm: T + 4 * MIN });
+    serie({ id: 'a', sessaoId: 's1', exercicioId: 'ex', indice: 0, cargaG: 25000, repeticoes: 10, concluidaEm: T + MIN });
+    serie({ id: 'b', sessaoId: 's1', exercicioId: 'ex', indice: 1, cargaG: 25000, repeticoes: 10, concluidaEm: T + 2 * MIN });
+    serie({ id: 'c', sessaoId: 's1', exercicioId: 'ex', indice: 2, cargaG: 25000, repeticoes: 10, concluidaEm: T + 3 * MIN, arquivadoEm: T + 4 * MIN });
 
     assert.deepEqual(indicesOcupados('s1', 'ex'), [0, 1, 2]);
     assert.equal(seriesDaSessao('s1').length, 2);
@@ -250,26 +241,26 @@ describe('índices ocupados', () => {
 
 describe('última sessão do exercício', () => {
   beforeEach(() => {
-    exercicio({ id: 'ex', nome: 'Remada alta', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex', nome: 'Remada alta', tipoMedicao: 'carga_kg' });
     sessao({ id: 'antiga', nome: 'Treino A', iniciadaEm: T - 7 * DIA, finalizadaEm: T - 7 * DIA + MIN });
     sessao({ id: 'anterior', nome: 'Treino A', iniciadaEm: T - DIA, finalizadaEm: T - DIA + MIN });
     sessao({ id: 'hoje', nome: 'Treino A', iniciadaEm: T });
   });
 
   it('devolve a sessão anterior por índice, ignorando a de hoje', () => {
-    serie({ id: 'v0', sessaoId: 'antiga', exercicioId: 'ex', indice: 0, cargaPlacas: 4, repeticoes: 10, concluidaEm: T - 7 * DIA });
+    serie({ id: 'v0', sessaoId: 'antiga', exercicioId: 'ex', indice: 0, cargaG: 20000, repeticoes: 10, concluidaEm: T - 7 * DIA });
     // Fora de ordem de propósito: quem casa por índice não pode depender da ordem de inserção.
-    serie({ id: 'a3', sessaoId: 'anterior', exercicioId: 'ex', indice: 3, cargaPlacas: 5, repeticoes: 8, concluidaEm: T - DIA + 3 * MIN });
-    serie({ id: 'a0', sessaoId: 'anterior', exercicioId: 'ex', indice: 0, cargaPlacas: 6, repeticoes: 10, concluidaEm: T - DIA });
-    serie({ id: 'a1', sessaoId: 'anterior', exercicioId: 'ex', indice: 1, cargaPlacas: 6, repeticoes: 10, concluidaEm: T - DIA + MIN });
-    serie({ id: 'a2', sessaoId: 'anterior', exercicioId: 'ex', indice: 2, cargaPlacas: 5, repeticoes: 9, concluidaEm: T - DIA + 2 * MIN });
-    serie({ id: 'h0', sessaoId: 'hoje', exercicioId: 'ex', indice: 0, cargaPlacas: 6, repeticoes: 10, concluidaEm: T });
+    serie({ id: 'a3', sessaoId: 'anterior', exercicioId: 'ex', indice: 3, cargaG: 25000, repeticoes: 8, concluidaEm: T - DIA + 3 * MIN });
+    serie({ id: 'a0', sessaoId: 'anterior', exercicioId: 'ex', indice: 0, cargaG: 30000, repeticoes: 10, concluidaEm: T - DIA });
+    serie({ id: 'a1', sessaoId: 'anterior', exercicioId: 'ex', indice: 1, cargaG: 30000, repeticoes: 10, concluidaEm: T - DIA + MIN });
+    serie({ id: 'a2', sessaoId: 'anterior', exercicioId: 'ex', indice: 2, cargaG: 25000, repeticoes: 9, concluidaEm: T - DIA + 2 * MIN });
+    serie({ id: 'h0', sessaoId: 'hoje', exercicioId: 'ex', indice: 0, cargaG: 30000, repeticoes: 10, concluidaEm: T });
 
     const anterior = ultimaSessaoDoExercicio('ex', 'hoje');
 
     assert.deepEqual(
       anterior.map((s) => s.carga),
-      [placa(6), placa(6), placa(5), placa(5)]
+      [kg(30000), kg(30000), kg(25000), kg(25000)]
     );
   });
 
@@ -279,12 +270,12 @@ describe('última sessão do exercício', () => {
 
   it('pula sessão arquivada', () => {
     db.update(sessoes).set({ arquivadoEm: T }).where(eq(sessoes.id, 'anterior')).run();
-    serie({ id: 'v0', sessaoId: 'antiga', exercicioId: 'ex', indice: 0, cargaPlacas: 4, repeticoes: 10, concluidaEm: T - 7 * DIA });
-    serie({ id: 'a0', sessaoId: 'anterior', exercicioId: 'ex', indice: 0, cargaPlacas: 6, repeticoes: 10, concluidaEm: T - DIA });
+    serie({ id: 'v0', sessaoId: 'antiga', exercicioId: 'ex', indice: 0, cargaG: 20000, repeticoes: 10, concluidaEm: T - 7 * DIA });
+    serie({ id: 'a0', sessaoId: 'anterior', exercicioId: 'ex', indice: 0, cargaG: 30000, repeticoes: 10, concluidaEm: T - DIA });
 
     assert.deepEqual(
       ultimaSessaoDoExercicio('ex', 'hoje').map((s) => s.carga),
-      [placa(4)]
+      [kg(20000)]
     );
   });
 });
@@ -293,13 +284,13 @@ describe('última sessão do exercício', () => {
 
 describe('itens do treino', () => {
   it('mapeia carga-alvo nas duas unidades, em ordem, sem item nem exercício arquivado', () => {
-    exercicio({ id: 'ex-placa', nome: 'Remada alta', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex-placa', nome: 'Remada alta', tipoMedicao: 'carga_kg' });
     exercicio({ id: 'ex-kg', nome: 'Seated leg press', tipoMedicao: 'carga_kg' });
     exercicio({ id: 'ex-tempo', nome: 'Esteira', tipoMedicao: 'tempo' });
-    exercicio({ id: 'ex-fora', nome: 'Facepull', tipoMedicao: 'carga_placa', arquivadoEm: T });
+    exercicio({ id: 'ex-fora', nome: 'Facepull', tipoMedicao: 'carga_kg', arquivadoEm: T });
     treino({ id: 'tr-a', nome: 'Treino A' });
     item({ id: 'it-2', treinoId: 'tr-a', exercicioId: 'ex-kg', ordem: 2, seriesAlvo: 4, repsAlvoMin: 8, repsAlvoMax: 10, cargaAlvoG: 20000 });
-    item({ id: 'it-1', treinoId: 'tr-a', exercicioId: 'ex-placa', ordem: 1, seriesAlvo: 4, repsAlvoMax: 10, cargaAlvoPlacas: 5 });
+    item({ id: 'it-1', treinoId: 'tr-a', exercicioId: 'ex-placa', ordem: 1, seriesAlvo: 4, repsAlvoMax: 10, cargaAlvoG: 25000 });
     item({ id: 'it-3', treinoId: 'tr-a', exercicioId: 'ex-tempo', ordem: 3, seriesAlvo: 1, duracaoAlvoS: 600 });
     item({ id: 'it-x', treinoId: 'tr-a', exercicioId: 'ex-kg', ordem: 4, arquivadoEm: T });
     item({ id: 'it-y', treinoId: 'tr-a', exercicioId: 'ex-fora', ordem: 5 });
@@ -310,12 +301,12 @@ describe('itens do treino', () => {
       itens.map((i) => i.itemId),
       ['it-1', 'it-2', 'it-3']
     );
-    assert.deepEqual(itens[0].cargaAlvo, placa(5));
+    assert.deepEqual(itens[0].cargaAlvo, kg(25000));
     assert.deepEqual(itens[1].cargaAlvo, kg(20000));
     assert.equal(itens[2].cargaAlvo, null);
     assert.equal(itens[2].duracaoAlvoS, 600);
     assert.equal(itens[2].descansoS, 90);
-    assert.deepEqual(itens[0].exercicio.incremento, placa(1));
+    assert.deepEqual(itens[0].exercicio.incremento, kg(2500));
   });
 });
 
@@ -358,56 +349,32 @@ describe('histórico do exercício', () => {
 // ── Histórico de sessões ──────────────────────────────────────────────────
 
 describe('sessões finalizadas', () => {
-  it('soma kg, converte placa calibrada e deixa de fora aquecimento e placa sem calibração', () => {
+  it('soma o que tem carga e deixa de fora aquecimento e o que não tem', () => {
     exercicio({ id: 'ex-kg', nome: 'Supino', tipoMedicao: 'carga_kg' });
-    exercicio({ id: 'ex-cal', nome: 'Peck', tipoMedicao: 'carga_placa', gramasPorPlaca: 5000 });
-    exercicio({ id: 'ex-cru', nome: 'Remada', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex-cal', nome: 'Peck', tipoMedicao: 'carga_kg' });
+    exercicio({ id: 'ex-cru', nome: 'Remada', tipoMedicao: 'carga_kg' });
     exercicio({ id: 'ex-corpo', nome: 'Abdominal', tipoMedicao: 'peso_corporal' });
     sessao({ id: 's1', nome: 'Treino A', iniciadaEm: T, finalizadaEm: T + 60 * MIN });
 
     serie({ id: 'q', sessaoId: 's1', exercicioId: 'ex-kg', indice: 0, tipo: 'aquecimento', cargaG: 20000, repeticoes: 15, concluidaEm: T });
     serie({ id: 'a', sessaoId: 's1', exercicioId: 'ex-kg', indice: 1, cargaG: 40000, repeticoes: 10, concluidaEm: T + MIN });
-    serie({ id: 'b', sessaoId: 's1', exercicioId: 'ex-cal', indice: 0, cargaPlacas: 5, repeticoes: 10, concluidaEm: T + 2 * MIN });
-    serie({ id: 'c', sessaoId: 's1', exercicioId: 'ex-cru', indice: 0, cargaPlacas: 5, repeticoes: 10, concluidaEm: T + 3 * MIN });
+    serie({ id: 'b', sessaoId: 's1', exercicioId: 'ex-cal', indice: 0, cargaG: 25000, repeticoes: 10, concluidaEm: T + 2 * MIN });
+    serie({ id: 'c', sessaoId: 's1', exercicioId: 'ex-cru', indice: 0, cargaG: 25000, repeticoes: 10, concluidaEm: T + 3 * MIN });
     serie({ id: 'd', sessaoId: 's1', exercicioId: 'ex-corpo', indice: 0, repeticoes: 12, concluidaEm: T + 4 * MIN });
 
     const [resumo] = sessoesFinalizadas();
 
-    assert.equal(resumo.gramasReps, 40000 * 10 + 5 * 5000 * 10);
+    // O aquecimento e o abdominal ficam de fora; as três com carga somam.
+    assert.equal(resumo.gramasReps, 40000 * 10 + 25000 * 10 + 25000 * 10);
     assert.equal(resumo.totalSeries, 5);
     assert.equal(resumo.finalizadaEm, T + 60 * MIN);
-    // Só a parcela do Peck: é ela que obriga o til na lista. A placa SEM
-    // calibração não entra em lugar nenhum — nem no total, nem aqui.
-    assert.equal(resumo.gramasRepsAproximados, 5 * 5000 * 10);
 
     // A consulta tem que dar o MESMO número que o domínio, senão a lista mostra
-    // um volume e abrir a sessão mostra outro.
+    // um volume e abrir a sessão mostra outro. São dois caminhos independentes
+    // — SQL de um lado, `volumeDaSerie` do outro — e este assert é o que
+    // impede os dois de divergirem em silêncio.
     const doDominio = volumeDaSessao(seriesDaSessaoComExercicio('s1'));
     assert.equal(resumo.gramasReps, doDominio.gramasReps);
-    assert.equal(resumo.gramasRepsAproximados, doDominio.gramasRepsAproximados);
-  });
-
-  it('sessão só de kg tem aproximado ZERO — o til não aparece onde não há conversão', () => {
-    exercicio({ id: 'ex-kg', nome: 'Supino', tipoMedicao: 'carga_kg' });
-    sessao({ id: 's1', nome: 'Treino A', iniciadaEm: T, finalizadaEm: T + MIN });
-    serie({ id: 'a', sessaoId: 's1', exercicioId: 'ex-kg', indice: 0, cargaG: 40000, repeticoes: 10, concluidaEm: T });
-
-    const [resumo] = sessoesFinalizadas();
-    assert.equal(resumo.gramasReps, 400000);
-    assert.equal(resumo.gramasRepsAproximados, 0);
-  });
-
-  it('calibrar a placa muda o volume do histórico sem tocar em nenhuma série', () => {
-    exercicio({ id: 'ex', nome: 'Peck', tipoMedicao: 'carga_placa' });
-    sessao({ id: 's1', nome: 'Treino A', iniciadaEm: T, finalizadaEm: T + MIN });
-    serie({ id: 'a', sessaoId: 's1', exercicioId: 'ex', indice: 0, cargaPlacas: 5, repeticoes: 10, concluidaEm: T });
-
-    assert.equal(sessoesFinalizadas()[0].gramasReps, 0);
-
-    db.update(exercicios).set({ gramasPorPlaca: 5000 }).where(eq(exercicios.id, 'ex')).run();
-
-    assert.equal(sessoesFinalizadas()[0].gramasReps, 250000);
-    assert.deepEqual(seriesDaSessao('s1')[0].carga, placa(5));
   });
 
   it('lista só as finalizadas e não arquivadas, da mais recente para a mais antiga', () => {
@@ -435,24 +402,24 @@ describe('plano da sessão', () => {
   });
 
   it('monta a ficha inteira a partir do id da sessão', () => {
-    exercicio({ id: 'ex-placa', nome: 'Remada alta', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex-placa', nome: 'Remada alta', tipoMedicao: 'carga_kg' });
     exercicio({ id: 'ex-kg', nome: 'Supino', tipoMedicao: 'carga_kg' });
     treino({ id: 'tr-a', nome: 'Treino A' });
-    item({ id: 'it-1', treinoId: 'tr-a', exercicioId: 'ex-placa', ordem: 1, seriesAlvo: 4, repsAlvoMax: 10, cargaAlvoPlacas: 5 });
+    item({ id: 'it-1', treinoId: 'tr-a', exercicioId: 'ex-placa', ordem: 1, seriesAlvo: 4, repsAlvoMax: 10, cargaAlvoG: 25000 });
     item({ id: 'it-2', treinoId: 'tr-a', exercicioId: 'ex-kg', ordem: 2, seriesAlvo: 3, repsAlvoMax: 12, cargaAlvoG: 40000 });
     sessao({ id: 's1', nome: 'Treino A', iniciadaEm: T, treinoId: 'tr-a' });
-    serie({ id: 'a', sessaoId: 's1', exercicioId: 'ex-placa', indice: 0, cargaPlacas: 6, repeticoes: 10, concluidaEm: T + MIN });
+    serie({ id: 'a', sessaoId: 's1', exercicioId: 'ex-placa', indice: 0, cargaG: 30000, repeticoes: 10, concluidaEm: T + MIN });
 
     const plano = planoDaSessao('s1');
 
     assert.equal(plano?.sessao.nome, 'Treino A');
     assert.deepEqual(plano?.itens.map((i) => i.itemId), ['it-1', 'it-2']);
     assert.equal(plano?.itens[0].feitas.length, 1);
-    assert.deepEqual(plano?.itens[0].exercicio.incremento, placa(1));
+    assert.deepEqual(plano?.itens[0].exercicio.incremento, kg(2500));
   });
 
   it('exercício feito FORA da ficha entra no fim do plano, e não some', () => {
-    exercicio({ id: 'ex-ficha', nome: 'Remada alta', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex-ficha', nome: 'Remada alta', tipoMedicao: 'carga_kg' });
     exercicio({ id: 'ex-fora', nome: 'Rosca direta', tipoMedicao: 'carga_kg' });
     treino({ id: 'tr-a', nome: 'Treino A' });
     item({ id: 'it-1', treinoId: 'tr-a', exercicioId: 'ex-ficha', ordem: 0, seriesAlvo: 4 });
@@ -546,8 +513,8 @@ describe('corpo e preferências', () => {
 
 describe('resumoDosTreinos', () => {
   it('conta os exercícios da ficha e devolve a descrição', () => {
-    exercicio({ id: 'ex-1', nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
-    exercicio({ id: 'ex-2', nome: 'Facepull', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex-1', nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
+    exercicio({ id: 'ex-2', nome: 'Facepull', tipoMedicao: 'carga_kg' });
     treino({ id: 'tr-a', nome: 'Treino A', ordem: 0, descricao: 'Costas e bíceps' });
     treino({ id: 'tr-b', nome: 'Treino B', ordem: 1, descricao: 'Pernas' });
     item({ id: 'it-1', treinoId: 'tr-a', exercicioId: 'ex-1', ordem: 0 });
@@ -572,9 +539,9 @@ describe('resumoDosTreinos', () => {
   });
 
   it('item e exercício arquivados saem da contagem: a ficha mostra o que dá para fazer hoje', () => {
-    exercicio({ id: 'ex-1', nome: 'Peck Dorsal', tipoMedicao: 'carga_placa' });
-    exercicio({ id: 'ex-2', nome: 'Facepull', tipoMedicao: 'carga_placa', arquivadoEm: T });
-    exercicio({ id: 'ex-3', nome: 'Remada', tipoMedicao: 'carga_placa' });
+    exercicio({ id: 'ex-1', nome: 'Peck Dorsal', tipoMedicao: 'carga_kg' });
+    exercicio({ id: 'ex-2', nome: 'Facepull', tipoMedicao: 'carga_kg', arquivadoEm: T });
+    exercicio({ id: 'ex-3', nome: 'Remada', tipoMedicao: 'carga_kg' });
     treino({ id: 'tr-a', nome: 'Treino A', ordem: 0 });
     item({ id: 'it-1', treinoId: 'tr-a', exercicioId: 'ex-1', ordem: 0 });
     item({ id: 'it-2', treinoId: 'tr-a', exercicioId: 'ex-2', ordem: 1 });

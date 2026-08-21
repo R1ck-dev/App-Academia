@@ -33,10 +33,8 @@ import { confirmarSerie, desfazerSerie, finalizarSessao } from '@/db/mutations';
 import type { TipoSerie } from '@/db/schema';
 import {
   cargaAnterior,
-  formatarCargaAproximada,
   formatarNumeroDaCarga,
   proximaCarga,
-  rotuloDaUnidade,
   type Carga,
 } from '@/dominio/carga';
 import { formatarDuracao, formatarRelogio } from '@/dominio/datas';
@@ -166,10 +164,6 @@ export function TelaSessao({
   const fim = fimDoDescanso(ultima, item.descansoS);
   const numero = sugerida === null ? '—' : numeroPrincipal(sugerida, ex.tipoMedicao);
   const unidade = rotuloDaGrandeza(sugerida?.carga ?? null, ex.tipoMedicao);
-  const aproximado =
-    sugerida?.carga != null && ex.gramasPorPlaca !== null && sugerida.carga.unidade === 'placa'
-      ? formatarCargaAproximada(sugerida.carga, ex.gramasPorPlaca)
-      : '';
 
   return (
     <SafeAreaView style={estilos.area} edges={['top', 'left', 'right']}>
@@ -273,8 +267,6 @@ export function TelaSessao({
           </Pressable>
         </View>
 
-        <Text style={estilos.aproximado}>{aproximado}</Text>
-
         {!temCarga(ex.tipoMedicao) || sugerida?.repeticoes == null ? null : (
           <View style={estilos.faixaDeReps}>
             <Text style={estilos.repsRotulo}>
@@ -330,7 +322,6 @@ export function TelaSessao({
       {tecladoAberto && temCarga(ex.tipoMedicao) ? (
         <TecladoDeCarga
           visivel
-          unidade={ex.tipoMedicao === 'carga_placa' ? 'placa' : 'kg'}
           inicial={sugerida?.carga ?? item.cargaAlvo}
           aoConfirmar={(carga) => {
             setTecladoAberto(false);
@@ -424,23 +415,14 @@ function rotuloDaGrandeza(
   carga: Carga | null,
   tipoMedicao: ItemDaSessao['exercicio']['tipoMedicao']
 ): string {
-  if (temCarga(tipoMedicao)) return carga === null ? 'toque para informar' : rotuloDaUnidade(carga);
+  if (temCarga(tipoMedicao)) return carga === null ? 'toque para informar' : 'kg';
   if (medidoPorTempo(tipoMedicao)) return 'na esteira';
   return 'repetições';
 }
 
-/**
- * O narrow por unidade não é burocracia: `proximaCarga`/`cargaAnterior` são
- * genéricas com `NoInfer`, e é este `if` que prova ao compilador que o
- * incremento é da MESMA unidade da carga.
- */
+/** Sem incremento não há degrau: exercício sem carga não anda pelo "+"/"−". */
 function passo(carga: Carga, incremento: Carga | null, direcao: 1 | -1): Carga {
   if (incremento === null) return carga;
-  if (carga.unidade === 'kg') {
-    if (incremento.unidade !== 'kg') return carga;
-    return direcao === 1 ? proximaCarga(carga, incremento) : cargaAnterior(carga, incremento);
-  }
-  if (incremento.unidade !== 'placa') return carga;
   return direcao === 1 ? proximaCarga(carga, incremento) : cargaAnterior(carga, incremento);
 }
 
@@ -548,13 +530,6 @@ const estilos = StyleSheet.create({
   numero: { ...tipo.numeroGrande, color: cor.texto, textAlign: 'center' },
   numeroVoando: { position: 'absolute', top: 0, color: cor.acao },
   unidade: { ...tipo.corpo, fontSize: 14.5, color: cor.textoSecundario, marginTop: 2 },
-  aproximado: {
-    paddingHorizontal: margem.conteudo,
-    paddingTop: espaco.um,
-    minHeight: 16,
-    ...tipo.metaMenor,
-    color: cor.textoTerciario,
-  },
 
   faixaDeReps: {
     flexDirection: 'row',

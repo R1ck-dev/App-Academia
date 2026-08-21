@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { kg, placa } from './carga.ts';
+import { kg } from './carga.ts';
 import type { Exercicio } from './exercicio.ts';
 import {
   contaNoVolume,
@@ -34,7 +34,6 @@ const comExercicio = (p: Partial<SerieComExercicio> = {}): SerieComExercicio => 
   ...serie(),
   exercicioNome: 'Supino Inclinado',
   tipoMedicao: 'carga_kg',
-  gramasPorPlaca: null,
   ...p,
 });
 
@@ -44,7 +43,6 @@ const exercicio = (p: Partial<Exercicio> = {}): Exercicio => ({
   grupoMuscular: 'peito',
   tipoMedicao: 'carga_kg',
   incremento: kg(2500),
-  gramasPorPlaca: null,
   arquivadoEm: null,
   ...p,
 });
@@ -53,55 +51,44 @@ const remadaAlta = exercicio({
   id: 'ex-remada',
   nome: 'Remada Alta',
   grupoMuscular: 'costas',
-  tipoMedicao: 'carga_placa',
-  incremento: placa(1),
+});
+
+const abdominal = exercicio({
+  id: 'ex-abdominal',
+  nome: 'Abdominal Supra Solo',
+  grupoMuscular: 'core',
+  tipoMedicao: 'peso_corporal',
+  incremento: null,
 });
 
 describe('volumeDaSerie', () => {
-  it('em kg, multiplica carga por repetições e não é aproximado', () => {
-    assert.deepEqual(volumeDaSerie(serie(), null), {
-      conta: true,
-      gramasReps: 400000,
-      aproximado: false,
-    });
+  it('multiplica carga por repetições', () => {
+    assert.deepEqual(volumeDaSerie(serie()), { conta: true, gramasReps: 400000 });
   });
 
   it('aquecimento fica de fora — senão o gráfico sobe quando só se aqueceu mais', () => {
-    assert.deepEqual(volumeDaSerie(serie({ tipo: 'aquecimento', carga: kg(20000) }), null), {
+    assert.deepEqual(volumeDaSerie(serie({ tipo: 'aquecimento', carga: kg(20000) })), {
       conta: false,
       motivo: 'aquecimento',
     });
   });
 
   it('série levada à falha conta', () => {
-    assert.equal(volumeDaSerie(serie({ tipo: 'falha' }), null).conta, true);
+    assert.equal(volumeDaSerie(serie({ tipo: 'falha' })).conta, true);
   });
 
-  it('peso corporal sai como sem_carga — abdominal não é "placa sem peso conhecido"', () => {
-    assert.deepEqual(volumeDaSerie(serie({ carga: null, repeticoes: 20 }), null), {
+  it('peso corporal sai como sem_carga', () => {
+    assert.deepEqual(volumeDaSerie(serie({ carga: null, repeticoes: 20 })), {
       conta: false,
       motivo: 'sem_carga',
     });
   });
 
-  it('placa sem calibração fica de fora, com motivo próprio', () => {
-    assert.deepEqual(volumeDaSerie(serie({ carga: placa(5) }), null), {
-      conta: false,
-      motivo: 'placa_sem_calibracao',
-    });
-  });
-
-  it('placa calibrada entra convertida e MARCADA como aproximada', () => {
-    assert.deepEqual(volumeDaSerie(serie({ carga: placa(5) }), 5000), {
-      conta: true,
-      gramasReps: 250000,
-      aproximado: true,
-    });
-  });
-
   it('esteira (sem carga e sem repetição) sai como sem_repeticoes, não sem_carga', () => {
+    // A ORDEM dos testes é o que separa os dois: se `sem_carga` viesse antes, a
+    // frase do resumo chamaria a corrida de "série sem carga".
     const corrida = serie({ carga: null, repeticoes: null, duracaoS: 600 });
-    assert.deepEqual(volumeDaSerie(corrida, null), { conta: false, motivo: 'sem_repeticoes' });
+    assert.deepEqual(volumeDaSerie(corrida), { conta: false, motivo: 'sem_repeticoes' });
   });
 
   it('contaNoVolume separa aquecimento de valida e falha', () => {
@@ -111,8 +98,8 @@ describe('volumeDaSerie', () => {
   });
 });
 
-// Uma sessão mista de verdade: 9 séries, quatro motivos de exclusão diferentes.
-const sessaoMista = (gramasPorPlaca: number | null): SerieComExercicio[] => [
+// Uma sessão mista de verdade: 9 séries, três motivos de exclusão diferentes.
+const sessaoMista = (): SerieComExercicio[] => [
   comExercicio({ id: 'a1', indice: 0, tipo: 'aquecimento', carga: kg(20000), repeticoes: 12 }),
   comExercicio({ id: 'a2', indice: 1 }),
   comExercicio({ id: 'a3', indice: 2 }),
@@ -121,10 +108,8 @@ const sessaoMista = (gramasPorPlaca: number | null): SerieComExercicio[] => [
       id: `r${i}`,
       exercicioId: 'ex-remada',
       exercicioNome: 'Remada Alta',
-      tipoMedicao: 'carga_placa',
-      gramasPorPlaca,
       indice: i,
-      carga: placa(5),
+      carga: kg(25000),
       repeticoes: 10,
     })
   ),
@@ -152,53 +137,42 @@ const sessaoMista = (gramasPorPlaca: number | null): SerieComExercicio[] => [
 ];
 
 describe('volumeDaSessao', () => {
-  it('soma só o que é kg e os quatro contadores fecham com o total de séries', () => {
-    const series = sessaoMista(null);
+  it('soma o que tem carga e os contadores fecham com o total de séries', () => {
+    const series = sessaoMista();
     const v = volumeDaSessao(series);
 
-    assert.equal(v.gramasReps, 800000);
-    assert.equal(v.seriesSomadas, 2);
+    assert.equal(v.gramasReps, 800000 + 750000);
+    assert.equal(v.seriesSomadas, 5);
     assert.equal(v.seriesAquecimento, 1);
-    assert.equal(v.seriesEmPlacaSemCalibracao, 3);
     assert.equal(v.seriesSemCarga, 2);
     assert.equal(v.seriesSemRepeticoes, 1);
 
+    // O total tem que fechar: uma série que sumisse de todos os buckets sairia
+    // do relatório sem ninguém notar.
     const contados =
-      v.seriesSomadas +
-      v.seriesAquecimento +
-      v.seriesEmPlacaSemCalibracao +
-      v.seriesSemCarga +
-      v.seriesSemRepeticoes;
+      v.seriesSomadas + v.seriesAquecimento + v.seriesSemCarga + v.seriesSemRepeticoes;
     assert.equal(contados, series.length);
   });
 
-  it('foraDaSoma nomeia cada exercício com o motivo certo, sem juntar abdominal com placa', () => {
-    const v = volumeDaSessao(sessaoMista(null));
+  it('foraDaSoma nomeia cada exercício com o motivo certo, sem juntar abdominal com esteira', () => {
+    const v = volumeDaSessao(sessaoMista());
 
     assert.deepEqual(v.foraDaSoma, [
       { id: 'ex-supino', nome: 'Supino Inclinado', motivo: 'aquecimento', series: 1 },
-      { id: 'ex-remada', nome: 'Remada Alta', motivo: 'placa_sem_calibracao', series: 3 },
       { id: 'ex-abdominal', nome: 'Abdominal Supra Solo', motivo: 'sem_carga', series: 2 },
       { id: 'ex-esteira', nome: 'Esteira', motivo: 'sem_repeticoes', series: 1 },
     ]);
 
-    // A frase da UI: "e mais N exercícios em placa" sai daqui, e conta 1, não 3.
-    const emPlaca = v.foraDaSoma.filter((f) => f.motivo === 'placa_sem_calibracao');
-    assert.equal(emPlaca.length, 1);
+    // A frase da UI: "e mais N exercícios sem carga" sai daqui, e conta 1, não 2.
+    const semCarga = v.foraDaSoma.filter((f) => f.motivo === 'sem_carga');
+    assert.equal(semCarga.length, 1);
   });
 
-  it('calibrar muda o bucket das MESMAS séries, sem tocar em nenhuma delas', () => {
-    const series = sessaoMista(null);
+  it('não muta a entrada', () => {
+    const series = sessaoMista();
     const antes = structuredClone(series);
     volumeDaSessao(series);
-    const depois = volumeDaSessao(sessaoMista(5000));
-
-    assert.deepEqual(series, antes, 'volumeDaSessao não pode mutar a entrada');
-    assert.equal(depois.seriesEmPlacaSemCalibracao, 0);
-    assert.equal(depois.seriesSomadas, 5);
-    assert.equal(depois.gramasReps, 800000 + 750000);
-    assert.equal(depois.seriesAproximadas, 3);
-    assert.equal(depois.gramasRepsAproximados, 750000);
+    assert.deepEqual(series, antes);
   });
 
   it('sessão vazia devolve zeros, não null', () => {
@@ -210,24 +184,15 @@ describe('volumeDaSessao', () => {
 });
 
 describe('volumeDoExercicio', () => {
-  it('devolve o volume na unidade do exercício — placa·rep, nunca convertido', () => {
+  it('soma carga × repetições de todas as séries válidas', () => {
     const h = {
       exercicio: remadaAlta,
       series: [
-        serie({ id: 'r0', exercicioId: 'ex-remada', carga: placa(5), repeticoes: 10 }),
-        serie({ id: 'r1', exercicioId: 'ex-remada', carga: placa(6), repeticoes: 8, indice: 1 }),
+        serie({ id: 'r0', exercicioId: 'ex-remada', carga: kg(25000), repeticoes: 10 }),
+        serie({ id: 'r1', exercicioId: 'ex-remada', carga: kg(30000), repeticoes: 8, indice: 1 }),
       ],
     };
-    assert.deepEqual(volumeDoExercicio(h), { valor: 5 * 10 + 6 * 8, unidade: 'placa' });
-  });
-
-  it('calibrar NÃO converte o volume do exercício: a escala dele continua a dele', () => {
-    const calibrada = { ...remadaAlta, gramasPorPlaca: 5000 };
-    const series = [serie({ exercicioId: 'ex-remada', carga: placa(5), repeticoes: 10 })];
-    assert.deepEqual(volumeDoExercicio({ exercicio: calibrada, series }), {
-      valor: 50,
-      unidade: 'placa',
-    });
+    assert.deepEqual(volumeDoExercicio(h), { valor: 25000 * 10 + 30000 * 8 });
   });
 
   it('ignora aquecimento e devolve null quando não sobra série somável', () => {
@@ -244,16 +209,16 @@ describe('volumeDoExercicio', () => {
     assert.equal(volumeDoExercicio({ exercicio: esteira, series }), null);
   });
 
-  it('descarta série com unidade incompatível em vez de somar maçã com laranja', () => {
+  it('descarta carga gravada num exercício que não deveria ter carga', () => {
     const h = {
-      exercicio: remadaAlta,
+      exercicio: abdominal,
       series: [
-        serie({ id: 'r0', exercicioId: 'ex-remada', carga: placa(5), repeticoes: 10 }),
+        serie({ id: 'b0', exercicioId: 'ex-abdominal', carga: null, repeticoes: 20 }),
         // Só chega aqui se `registrarSerie` for burlada; ainda assim não entra.
-        serie({ id: 'r1', exercicioId: 'ex-remada', carga: kg(40000), repeticoes: 10, indice: 1 }),
+        serie({ id: 'b1', exercicioId: 'ex-abdominal', carga: kg(40000), repeticoes: 10, indice: 1 }),
       ],
     };
-    assert.deepEqual(volumeDoExercicio(h), { valor: 50, unidade: 'placa' });
+    assert.equal(volumeDoExercicio(h), null);
   });
 });
 
@@ -265,11 +230,6 @@ describe('sugerirCarga', () => {
   it('sobe um incremento quando bateu todas as séries no alvo', () => {
     const h = { exercicio: exercicio(), series: tres() };
     assert.deepEqual(sugerirCarga(h, alvo), kg(42500));
-  });
-
-  it('em placa sobe UMA placa, nunca 2500', () => {
-    const series = tres({ exercicioId: 'ex-remada', carga: placa(5) });
-    assert.deepEqual(sugerirCarga({ exercicio: remadaAlta, series }, alvo), placa(6));
   });
 
   it('mantém quando faltou repetição em alguma série', () => {
@@ -325,15 +285,9 @@ describe('sugerirCarga', () => {
 });
 
 describe('formatarVolumeNaUnidade', () => {
-  it('kg passa por formatarVolume; placa tem texto próprio, SEM til', () => {
-    // Sem til de propósito: placa·rep é exato NA ESCALA do exercício. O que ele
-    // não é, é somável com o de outro exercício.
-    assert.equal(formatarVolumeNaUnidade({ valor: 720_000, unidade: 'kg' }), '720 kg·rep');
-    assert.equal(formatarVolumeNaUnidade({ valor: 108, unidade: 'placa' }), '108 placa·rep');
-  });
-
-  it('placa no singular também escreve "placa·rep" — é unidade, não contagem', () => {
-    assert.equal(formatarVolumeNaUnidade({ valor: 1, unidade: 'placa' }), '1 placa·rep');
+  it('nenhuma tela divide por 1000 — a formatação mora aqui', () => {
+    assert.equal(formatarVolumeNaUnidade({ valor: 720_000 }), '720 kg·rep');
+    assert.equal(formatarVolumeNaUnidade({ valor: 0 }), '0 kg·rep');
   });
 });
 
@@ -381,17 +335,17 @@ describe('progressaoDoExercicio', () => {
     assert.equal(pontos[0].repeticoes, 10);
   });
 
-  it('descarta série de unidade INCOMPATÍVEL em vez de compará-la (5 placas > 42500 g)', () => {
-    // A guarda de runtime: sem ela, `valorDaCarga` compararia 5 com 42500 e a
-    // placa nunca seria o pico — mas ela também não pode ENTRAR como pico.
+  it('carga num exercício que não tem carga é descartada, mas a série continua contada', () => {
+    // A guarda de runtime: só chega aqui dado que burlou `registrarSerie`, e
+    // ainda assim ele não pode virar o pico da curva. A série aconteceu — some
+    // do eixo da carga, não da contagem.
     const series = [
-      serie({ id: 'a', indice: 0, carga: kg(42500) }),
-      serie({ id: 'b', indice: 1, carga: placa(5) }),
+      serie({ id: 'a', exercicioId: 'ex-abdominal', indice: 0, carga: null, repeticoes: 20 }),
+      serie({ id: 'b', exercicioId: 'ex-abdominal', indice: 1, carga: kg(42500), repeticoes: 20 }),
     ];
-    const pontos = progressaoDoExercicio({ exercicio: exercicio(), series });
+    const pontos = progressaoDoExercicio({ exercicio: abdominal, series });
 
-    assert.deepEqual(pontos[0].melhorCarga, kg(42500));
-    // A série continua CONTADA (ela aconteceu); só não vira carga.
+    assert.equal(pontos[0].melhorCarga, null);
     assert.equal(pontos[0].series, 2);
   });
 
@@ -427,21 +381,11 @@ describe('progressaoDoExercicio', () => {
 describe('valorDaProgressao', () => {
   const ponto = { sessaoId: 's1', instante: 1000, melhorCarga: kg(42500), repeticoes: 40, duracaoS: 0, series: 4 };
 
-  it('em kg é a carga em GRAMA CRUA — a escala do próprio exercício, nunca convertida', () => {
+  it('em exercício com carga é a carga em GRAMA', () => {
     assert.equal(valorDaProgressao(ponto, exercicio()), 42500);
   });
 
-  it('em placa é o número de placas, e calibrar NÃO muda a escala do gráfico', () => {
-    const semCalibrar = { ...remadaAlta };
-    const calibrada = exercicio({ ...remadaAlta, gramasPorPlaca: 5000 });
-    const p = { ...ponto, melhorCarga: placa(5) };
-
-    assert.equal(valorDaProgressao(p, semCalibrar), 5);
-    assert.equal(valorDaProgressao(p, calibrada), 5, 'a curva do exercício continua em placa');
-  });
-
   it('peso corporal progride em REPETIÇÃO; tempo, em segundo', () => {
-    const abdominal = exercicio({ tipoMedicao: 'peso_corporal', incremento: null });
     const esteira = exercicio({ tipoMedicao: 'tempo', incremento: null });
     const p = { ...ponto, melhorCarga: null, repeticoes: 48, duracaoS: 600 };
 

@@ -11,15 +11,14 @@
  */
 
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Chip } from '@/components/progresso-base';
 import { useConsulta } from '@/components/progresso-consulta';
 import { ChipsDeExercicio, ProgressoDoExercicio } from '@/components/progresso-exercicios';
 import { ProgressoSessoes } from '@/components/progresso-sessoes';
 import { Tela } from '@/components/tela';
-import { FolhaDeCalibracao } from '@/components/treino-calibracao';
-import { espaco, margem } from '@/constants/tema';
+import { cor, espaco, margem, tipo } from '@/constants/tema';
 import { historicoDoExercicio, listarExercicios, sessoesFinalizadas } from '@/db/queries';
 
 /** O histórico é para olhar, não para rolar: além disso é arqueologia. */
@@ -32,7 +31,6 @@ type Modo = 'sessoes' | 'exercicios';
 export default function Historico() {
   const [modo, setModo] = useState<Modo>('sessoes');
   const [exercicioId, setExercicioId] = useState<string | null>(null);
-  const [calibrando, setCalibrando] = useState(false);
 
   const dados = useConsulta('Historico', () => ({
     sessoes: sessoesFinalizadas(SESSOES_NA_LISTA),
@@ -58,7 +56,7 @@ export default function Historico() {
         />
       </View>
 
-      {modo === 'exercicios' ? (
+      {modo === 'exercicios' && dados.exercicios.length > 0 ? (
         <ChipsDeExercicio
           exercicios={dados.exercicios}
           escolhido={escolhido}
@@ -69,14 +67,20 @@ export default function Historico() {
       <ScrollView style={estilos.rolagem} contentContainerStyle={estilos.conteudo}>
         {modo === 'sessoes' ? (
           <ProgressoSessoes sessoes={dados.sessoes} />
-        ) : detalhe === null ? null : (
-          <ProgressoDoExercicio historico={detalhe} aoCalibrar={() => setCalibrando(true)} />
+        ) : detalhe === null ? (
+          // O catálogo começa vazio, então esta é a PRIMEIRA coisa que ele vê
+          // nesta aba. Uma tela em branco pareceria defeito.
+          <View style={estilos.vazio}>
+            <Text style={estilos.vazioTitulo}>Nenhum exercício ainda</Text>
+            <Text style={estilos.vazioTexto}>
+              Monte um treino na aba Treino e crie os exercícios dele. A evolução de cada um aparece
+              aqui a partir da primeira série registrada.
+            </Text>
+          </View>
+        ) : (
+          <ProgressoDoExercicio historico={detalhe} />
         )}
       </ScrollView>
-
-      {calibrando && detalhe !== null ? (
-        <FolhaDeCalibracao exercicio={detalhe.exercicio} aoFechar={() => setCalibrando(false)} />
-      ) : null}
     </Tela>
   );
 }
@@ -85,4 +89,7 @@ const estilos = StyleSheet.create({
   chips: { flexDirection: 'row', gap: espaco.dois, paddingHorizontal: margem.conteudo },
   rolagem: { flex: 1 },
   conteudo: { paddingBottom: espaco.oito },
+  vazio: { paddingHorizontal: margem.conteudo, paddingTop: espaco.oito, gap: espaco.dois },
+  vazioTitulo: { ...tipo.itemForte, color: cor.texto },
+  vazioTexto: { ...tipo.corpoMenor, color: cor.textoSecundario },
 });

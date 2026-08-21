@@ -1,10 +1,8 @@
 /**
  * As sessões finalizadas, mais recentes primeiro.
  *
- * O volume só aparece quando existe em quilo. Sessão inteira em placa sem
- * calibração soma zero — e "0 kg·rep" ao lado de 24 séries seria uma mentira com
- * cara de número. Ver `sessoesFinalizadas` e a decisão 1 (placa não vira quilo
- * por chute).
+ * O volume só aparece quando existe. Sessão inteira de abdominal e esteira soma
+ * zero — e "0 kg·rep" ao lado de 24 séries seria uma mentira com cara de número.
  */
 
 import { StyleSheet, View } from 'react-native';
@@ -37,15 +35,9 @@ export function ProgressoSessoes({ sessoes }: { sessoes: readonly ResumoDeSessao
   );
 }
 
-/**
- * O til aparece quando ALGUMA parte do total veio de placa convertida — o mesmo
- * critério de `VolumeDaSessao.gramasRepsAproximados`. Sem ele, uma sessão de
- * máquina calibrada imprimiria com a mesma cara de exatidão de uma de anilha.
- */
 function textoDoVolume(s: ResumoDeSessao): string {
   if (s.gramasReps === 0) return 'sem volume em kg';
-  const til = s.gramasRepsAproximados > 0 ? '~' : '';
-  return `${til}${formatarVolume(s.gramasReps)}`;
+  return formatarVolume(s.gramasReps);
 }
 
 const estilos = StyleSheet.create({
